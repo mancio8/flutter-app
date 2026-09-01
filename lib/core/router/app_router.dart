@@ -17,6 +17,7 @@ import '../../features/home/presentation/pages/error_showcase_page.dart';
 import '../../features/home/presentation/pages/file_upload_showcase_page.dart';
 import '../../features/home/presentation/pages/language_showcase_page.dart';
 import '../../features/forms/presentation/pages/forms_example_page.dart';
+import '../../features/rifornimenti/presentation/pages/rifornimenti_page.dart'; // NUOVO IMPORT
 import '../../shared/widgets/responsive_scaffold.dart';
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
@@ -86,6 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/dashboard',
             builder: (context, state) => const DashboardPage(),
+          ),
+          GoRoute(
+            path: '/rifornimenti', // NUOVA ROTTA
+            builder: (context, state) => const RifornimentiPage(),
           ),
           GoRoute(
             path: '/users',
