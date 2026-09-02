@@ -19,6 +19,9 @@ import '../../features/home/presentation/pages/language_showcase_page.dart';
 import '../../features/forms/presentation/pages/forms_example_page.dart';
 import '../../features/rifornimenti/presentation/pages/rifornimenti_page.dart'; // NUOVO IMPORT
 import '../../shared/widgets/responsive_scaffold.dart';
+import '../../features/raccolta/presentation/pages/raccolta_page.dart';
+
+
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
   // This will be updated when onboarding is completed
@@ -108,6 +111,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/notifications',
             builder: (context, state) => const NotificationsPage(),
+          ),
+          // Nella lista delle routes
+          GoRoute(
+            path: '/raccolta',
+            builder: (context, state) => const RaccoltaPage(),
           ),
           GoRoute(
             path: '/settings',

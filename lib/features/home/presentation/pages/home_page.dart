@@ -138,13 +138,11 @@ class HomePage extends ConsumerWidget {
                     child: Text(l10n.forms),
                   ),
 
-                  // Aggiungi questo pulsante per i rifornimenti
-                  FilledButton.tonalIcon(
+                  FilledButton.tonal(
                     onPressed: () {
-                      context.go('/rifornimenti');
+                      context.go('/raccolta');
                     },
-                    icon: const Icon(Icons.local_gas_station),
-                    label: Text('Rifornimenti'), // Idealmente: l10n.rifornimenti
+                    child: const Text('Raccolta Differenziata'),
                   ),
                 ],
               ),
