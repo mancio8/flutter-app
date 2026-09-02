@@ -23,7 +23,7 @@ class MockApiService {
         id: 'user_$i',
         email: 'user$i@example.com',
         name: _generateRandomName(),
-        avatarUrl: _generateAvatarUrl(i),
+        avatarUrl: null, //_generateAvatarUrl(i),
         role: _getRandomRole(),
         createdAt: DateTime.now().subtract(Duration(days: _random.nextInt(365))),
         isActive: _random.nextBool(),

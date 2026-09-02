@@ -62,6 +62,19 @@ class RifornimentiNotifier extends AsyncNotifier<List<Rifornimento>> {
     }
   }
 
+    // NUOVO: Metodo per aggiornare un rifornimento
+  Future<void> updateRifornimento(Rifornimento rifornimento) async {
+    final repository = ref.read(rifornimentiRepositoryProvider);
+    state = const AsyncValue.loading();
+    
+    try {
+      await repository.updateRifornimento(rifornimento);
+      await _reload();
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+    }
+  }
+
   // Elimina un rifornimento
   Future<void> deleteRifornimento(String id) async {
     final repository = ref.read(rifornimentiRepositoryProvider);
@@ -82,7 +95,21 @@ class RifornimentiNotifier extends AsyncNotifier<List<Rifornimento>> {
       state = AsyncValue.error(e, stackTrace);
     }
   }
+
+  // Metodo helper per ricaricare
+  Future<void> _reload() async {
+    final repository = ref.read(rifornimentiRepositoryProvider);
+    final veicoloSelezionato = ref.read(veicoloSelezionatoProvider);
+    
+    final rifornimenti = veicoloSelezionato != null
+        ? await repository.getRifornimentiPerVeicolo(veicoloSelezionato)
+        : await repository.getRifornimenti();
+    
+    state = AsyncValue.data(rifornimenti);
+  }
 }
+
+  
 
 // CAMBIA: Da FutureProvider a AsyncNotifierProvider
 final rifornimentiProvider = AsyncNotifierProvider<RifornimentiNotifier, List<Rifornimento>>(() {

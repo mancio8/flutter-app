@@ -140,9 +140,9 @@ class _AnimatedNavigationRail extends StatelessWidget {
                 label: Text(AppLocalizations.of(context).home),
               ),
               NavigationRailDestination(
-                icon: const Icon(Icons.dashboard_outlined),
-                selectedIcon: const Icon(Icons.dashboard),
-                label: Text(AppLocalizations.of(context).dashboard),
+                icon: const Icon(Icons.local_gas_station),
+                selectedIcon: const Icon(Icons.local_gas_station),
+                label: Text('Fuel'),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.people_outline),
@@ -168,7 +168,7 @@ class _AnimatedNavigationRail extends StatelessWidget {
 
   int _getSelectedIndex(String route) {
     if (route.startsWith('/home') || route.startsWith('/showcase') || route.startsWith('/forms')) return 0;
-    if (route.startsWith('/dashboard')) return 1;
+    if (route.startsWith('/rifornimenti')) return 1;
     if (route.startsWith('/users')) return 2;
     if (route.startsWith('/notifications')) return 3;
     if (route.startsWith('/settings')) return 4;
@@ -181,7 +181,7 @@ class _AnimatedNavigationRail extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        context.go('/dashboard');
+        context.go('/rifornimenti');
         break;
       case 2:
         context.go('/users');
@@ -223,9 +223,9 @@ class _AnimatedNavigationBar extends StatelessWidget {
                 label: AppLocalizations.of(context).home,
               ),
               NavigationDestination(
-                icon: const Icon(Icons.dashboard_outlined),
-                selectedIcon: const Icon(Icons.dashboard),
-                label: AppLocalizations.of(context).dashboard,
+                icon: const Icon(Icons.local_gas_station),
+                selectedIcon: const Icon(Icons.local_gas_station),
+                label:'Fuel',
               ),
               NavigationDestination(
                 icon: const Icon(Icons.people_outline),
@@ -246,7 +246,7 @@ class _AnimatedNavigationBar extends StatelessWidget {
 
   int _getSelectedIndex(String route) {
     if (route.startsWith('/home') || route.startsWith('/showcase') || route.startsWith('/forms')) return 0;
-    if (route.startsWith('/dashboard')) return 1;
+    if (route.startsWith('/rifornimenti')) return 1;
     if (route.startsWith('/users')) return 2;
     if (route.startsWith('/settings')) return 3;
     return 0;
@@ -258,7 +258,7 @@ class _AnimatedNavigationBar extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        context.go('/dashboard');
+        context.go('/rifornimenti');
         break;
       case 2:
         context.go('/users');

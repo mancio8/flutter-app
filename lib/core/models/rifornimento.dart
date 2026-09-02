@@ -21,7 +21,33 @@ class Rifornimento {
     this.note,
   });
 
-  // Converte in JSON per salvarlo
+  // NUOVO: Metodo copyWith per creare una copia con modifiche
+  Rifornimento copyWith({
+    String? id,
+    String? veicoloId,
+    DateTime? data,
+    double? litri,
+    double? costo,
+    double? prezzoPerLitro,
+    String? tipoCarburante,
+    double? chilometraggio,
+    String? note,
+    bool clearChilometraggio = false,
+    bool clearNote = false,
+  }) {
+    return Rifornimento(
+      id: id ?? this.id,
+      veicoloId: veicoloId ?? this.veicoloId,
+      data: data ?? this.data,
+      litri: litri ?? this.litri,
+      costo: costo ?? this.costo,
+      prezzoPerLitro: prezzoPerLitro ?? this.prezzoPerLitro,
+      tipoCarburante: tipoCarburante ?? this.tipoCarburante,
+      chilometraggio: clearChilometraggio ? null : (chilometraggio ?? this.chilometraggio),
+      note: clearNote ? null : (note ?? this.note),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -36,7 +62,6 @@ class Rifornimento {
     };
   }
 
-  // Crea da JSON
   factory Rifornimento.fromJson(Map<String, dynamic> json) {
     return Rifornimento(
       id: json['id'],

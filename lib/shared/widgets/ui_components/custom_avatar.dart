@@ -92,12 +92,10 @@ class CustomAvatar extends StatelessWidget {
           ),
         ),
         errorWidget: (context, url, error) {
-          // Use enhanced error reporting
-          GlobalErrorHandler.reportImageError(
-            imageUrl: url,
-            error: error,
-            additionalContext: 'CustomAvatar widget',
-          );
+          debugPrint('❌ AVATAR ERROR');
+          debugPrint('URL: $url');
+          debugPrint('ERROR: $error');
+
           return _buildFallback(theme, fontSize);
         },
       );

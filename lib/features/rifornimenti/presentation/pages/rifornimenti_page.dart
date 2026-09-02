@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/rifornimento.dart';
 import '../../../../core/models/veicolo.dart';
 import '../../providers/rifornimenti_provider.dart';
+import '../../services/rifornimenti_export_service.dart';  // NUOVO IMPORT
 import '../widgets/rifornimento_card.dart';
 
 // La pagina principale per i rifornimenti
@@ -20,6 +21,14 @@ class RifornimentiPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rifornimenti'),
+        actions: [
+          // NUOVO: Pulsante per esportare in JSON
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () => _exportJson(context, ref),
+            tooltip: 'Esporta JSON',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -82,6 +91,9 @@ class RifornimentiPage extends ConsumerWidget {
                         ref.read(rifornimentiProvider.notifier)
                             .deleteRifornimento(rifornimento.id);
                       },
+                      onEdit: () {
+                        _showEditDialog(context, ref, rifornimento);
+                      },
                     );
                   },
                 );
@@ -97,10 +109,77 @@ class RifornimentiPage extends ConsumerWidget {
     );
   }
 
+  // NUOVO: Metodo per esportare in JSON
+  Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
+    // Ottieni i rifornimenti attuali
+    final rifornimenti = ref.read(rifornimentiProvider).value ?? [];
+    
+    // Verifica se ci sono dati da esportare
+    if (rifornimenti.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nessun dato da esportare'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    // Mostra un indicatore di caricamento
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+    
+    try {
+      // Esporta e condividi
+      await RifornimentiExportService.exportAndShareJson(rifornimenti);
+      
+      // Chiudi il dialog di caricamento
+      if (context.mounted) Navigator.pop(context);
+      
+      // Mostra conferma
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Esportati ${rifornimenti.length} rifornimenti'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Chiudi il dialog di caricamento
+      if (context.mounted) Navigator.pop(context);
+      
+      // Mostra errore
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore nell\'esportazione: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   void _showAddDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) => _AddRifornimentoDialog(ref: ref),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, WidgetRef ref, Rifornimento rifornimento) {
+    showDialog(
+      context: context,
+      builder: (context) => _AddRifornimentoDialog(
+        ref: ref,
+        rifornimento: rifornimento,
+      ),
     );
   }
 }
@@ -171,11 +250,15 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-// Dialog per aggiungere un nuovo rifornimento
+// Dialog per aggiungere o modificare un rifornimento
 class _AddRifornimentoDialog extends ConsumerStatefulWidget {
   final WidgetRef ref;
+  final Rifornimento? rifornimento;
   
-  const _AddRifornimentoDialog({required this.ref});
+  const _AddRifornimentoDialog({
+    required this.ref,
+    this.rifornimento,
+  });
 
   @override
   ConsumerState<_AddRifornimentoDialog> createState() => _AddRifornimentoDialogState();
@@ -183,14 +266,42 @@ class _AddRifornimentoDialog extends ConsumerStatefulWidget {
 
 class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _litriController = TextEditingController();
-  final _costoController = TextEditingController();
-  final _chilometraggioController = TextEditingController();
-  final _noteController = TextEditingController();
+  late final TextEditingController _litriController;
+  late final TextEditingController _costoController;
+  late final TextEditingController _chilometraggioController;
+  late final TextEditingController _noteController;
   
   DateTime _data = DateTime.now();
   String _tipoCarburante = 'Benzina';
-  String? _veicoloSelezionato; // DICHIARAZIONE DELLA VARIABILE (mancava!)
+  String? _veicoloSelezionato;
+
+  bool get isEditing => widget.rifornimento != null;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    final rifornimento = widget.rifornimento;
+    
+    _litriController = TextEditingController(
+      text: rifornimento?.litri.toString() ?? '',
+    );
+    _costoController = TextEditingController(
+      text: rifornimento?.costo.toString() ?? '',
+    );
+    _chilometraggioController = TextEditingController(
+      text: rifornimento?.chilometraggio?.toString() ?? '',
+    );
+    _noteController = TextEditingController(
+      text: rifornimento?.note ?? '',
+    );
+    
+    if (rifornimento != null) {
+      _data = rifornimento.data;
+      _tipoCarburante = rifornimento.tipoCarburante;
+      _veicoloSelezionato = rifornimento.veicoloId;
+    }
+  }
 
   @override
   void dispose() {
@@ -206,7 +317,7 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
     final veicoliAsync = ref.watch(veicoliProvider);
     
     return AlertDialog(
-      title: const Text('Nuovo Rifornimento'),
+      title: Text(isEditing ? 'Modifica Rifornimento' : 'Nuovo Rifornimento'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -283,8 +394,9 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
               TextFormField(
                 controller: _chilometraggioController,
                 decoration: const InputDecoration(
-                  labelText: 'Chilometraggio',
+                  labelText: 'Chilometraggio (opzionale)',
                   suffixText: 'km',
+                  hintText: 'Lascia vuoto se non lo sai',
                 ),
                 keyboardType: TextInputType.number,
               ),
@@ -314,7 +426,7 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
               TextFormField(
                 controller: _noteController,
                 decoration: const InputDecoration(
-                  labelText: 'Note',
+                  labelText: 'Note (opzionali)',
                 ),
                 maxLines: 2,
               ),
@@ -329,7 +441,7 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
         ),
         ElevatedButton(
           onPressed: () => _save(),
-          child: const Text('Salva'),
+          child: Text(isEditing ? 'Salva Modifiche' : 'Salva'),
         ),
       ],
     );
@@ -343,19 +455,39 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
           ? null
           : double.parse(_chilometraggioController.text);
 
-      final rifornimento = Rifornimento(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        veicoloId: _veicoloSelezionato, // Ora la variabile esiste
-        data: _data,
-        litri: litri,
-        costo: costo,
-        prezzoPerLitro: costo / litri,
-        tipoCarburante: _tipoCarburante,
-        chilometraggio: chilometraggio,
-        note: _noteController.text.isEmpty ? null : _noteController.text,
-      );
+      if (isEditing) {
+        final rifornimentoAggiornato = widget.rifornimento!.copyWith(
+          veicoloId: _veicoloSelezionato,
+          data: _data,
+          litri: litri,
+          costo: costo,
+          prezzoPerLitro: costo / litri,
+          tipoCarburante: _tipoCarburante,
+          chilometraggio: chilometraggio,
+          note: _noteController.text.isEmpty ? null : _noteController.text,
+          clearChilometraggio: _chilometraggioController.text.isEmpty,
+          clearNote: _noteController.text.isEmpty,
+        );
 
-      widget.ref.read(rifornimentiProvider.notifier).addRifornimento(rifornimento);
+        widget.ref.read(rifornimentiProvider.notifier)
+            .updateRifornimento(rifornimentoAggiornato);
+      } else {
+        final rifornimento = Rifornimento(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          veicoloId: _veicoloSelezionato,
+          data: _data,
+          litri: litri,
+          costo: costo,
+          prezzoPerLitro: costo / litri,
+          tipoCarburante: _tipoCarburante,
+          chilometraggio: chilometraggio,
+          note: _noteController.text.isEmpty ? null : _noteController.text,
+        );
+
+        widget.ref.read(rifornimentiProvider.notifier)
+            .addRifornimento(rifornimento);
+      }
+      
       Navigator.pop(context);
     }
   }
