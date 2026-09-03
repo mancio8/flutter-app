@@ -130,7 +130,7 @@ class BibliotecaRepository {
   Future<void> _loadFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
     final String? jsonString = prefs.getString(_storageKey);
-    
+
     if (jsonString != null) {
       final List<dynamic> jsonList = json.decode(jsonString);
       _libri = jsonList
@@ -193,8 +193,48 @@ class BibliotecaRepository {
     if (_libri.isEmpty) {
       await _loadFromStorage();
     }
-    return JsonEncoder.withIndent('  ').convert(
-      _libri.map((l) => l.toJson()).toList(),
-    );
+    return JsonEncoder.withIndent(
+      '  ',
+    ).convert(_libri.map((l) => l.toJson()).toList());
+  }
+
+  // Importa da JSON (unisce o sostituisce la libreria esistente)
+  Future<int> importFromJson(String jsonString, {bool merge = true}) async {
+    if (_libri.isEmpty) {
+      await _loadFromStorage();
+    }
+
+    final List<dynamic> jsonList = json.decode(jsonString);
+    final List<Libro> importati = [];
+    for (var i = 0; i < jsonList.length; i++) {
+      final map = jsonList[i] as Map<String, dynamic>;
+      var libro = Libro.fromJson(map);
+      // Garantisce id univoci se mancanti nel JSON importato
+      if (map['id'] == null) {
+        libro = libro.copyWith(
+          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
+        );
+      }
+      importati.add(libro);
+    }
+
+    if (merge) {
+      final chiaviEsistenti = _libri
+          .map((l) => '${l.titolo.toLowerCase()}|${l.autore.toLowerCase()}')
+          .toSet();
+
+      final nuovi = importati.where((l) {
+        final chiave = '${l.titolo.toLowerCase()}|${l.autore.toLowerCase()}';
+        return !chiaviEsistenti.contains(chiave);
+      }).toList();
+
+      _libri.addAll(nuovi);
+      await _saveToStorage();
+      return nuovi.length;
+    } else {
+      _libri = importati;
+      await _saveToStorage();
+      return _libri.length;
+    }
   }
 }

@@ -18,7 +18,7 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
   Future<List<Libro>> build() async {
     final repository = ref.watch(bibliotecaRepositoryProvider);
     final ordinamento = ref.watch(ordinamentoProvider);
-    
+
     final libri = await repository.getLibri();
     return _ordina(libri, ordinamento);
   }
@@ -57,6 +57,13 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
     await _reload();
   }
 
+  Future<int> importJson(String jsonString, {bool merge = true}) async {
+    final repository = ref.read(bibliotecaRepositoryProvider);
+    final count = await repository.importFromJson(jsonString, merge: merge);
+    await _reload();
+    return count;
+  }
+
   Future<void> _reload() async {
     final repository = ref.read(bibliotecaRepositoryProvider);
     final ordinamento = ref.read(ordinamentoProvider);
@@ -66,9 +73,10 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
 }
 
 // Provider principale
-final bibliotecaProvider = AsyncNotifierProvider<BibliotecaNotifier, List<Libro>>(() {
-  return BibliotecaNotifier();
-});
+final bibliotecaProvider =
+    AsyncNotifierProvider<BibliotecaNotifier, List<Libro>>(() {
+      return BibliotecaNotifier();
+    });
 
 // Provider per l'export JSON
 final bibliotecaExportProvider = FutureProvider<String>((ref) async {

@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/rifornimento.dart';
 import '../../../../core/models/veicolo.dart';
 import '../../providers/rifornimenti_provider.dart';
-import '../../services/rifornimenti_export_service.dart';  // NUOVO IMPORT
+import '../../services/rifornimenti_export_service.dart'; // NUOVO IMPORT
 import '../widgets/rifornimento_card.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 // La pagina principale per i rifornimenti
 class RifornimentiPage extends ConsumerWidget {
@@ -22,7 +24,12 @@ class RifornimentiPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Rifornimenti'),
         actions: [
-          // NUOVO: Pulsante per esportare in JSON
+          // NUOVO: Pulsante per importare da JSON
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            onPressed: () => _importJson(context, ref),
+            tooltip: 'Importa JSON',
+          ),
           IconButton(
             icon: const Icon(Icons.download),
             onPressed: () => _exportJson(context, ref),
@@ -40,7 +47,7 @@ class RifornimentiPage extends ConsumerWidget {
               ref.read(veicoloSelezionatoProvider.notifier).state = veicoloId;
             },
           ),
-          
+
           // Barra delle statistiche
           Container(
             padding: const EdgeInsets.all(16),
@@ -63,16 +70,15 @@ class RifornimentiPage extends ConsumerWidget {
               ],
             ),
           ),
-          
+
           // Lista dei rifornimenti
           Expanded(
             child: rifornimentiAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              
-              error: (error, stackTrace) => Center(
-                child: Text('Errore: $error'),
-              ),
-              
+
+              error: (error, stackTrace) =>
+                  Center(child: Text('Errore: $error')),
+
               data: (rifornimenti) {
                 if (rifornimenti.isEmpty) {
                   return const Center(
@@ -88,7 +94,8 @@ class RifornimentiPage extends ConsumerWidget {
                     return RifornimentoCard(
                       rifornimento: rifornimento,
                       onDelete: () {
-                        ref.read(rifornimentiProvider.notifier)
+                        ref
+                            .read(rifornimentiProvider.notifier)
                             .deleteRifornimento(rifornimento.id);
                       },
                       onEdit: () {
@@ -111,10 +118,8 @@ class RifornimentiPage extends ConsumerWidget {
 
   // NUOVO: Metodo per esportare in JSON
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
-    // Ottieni i rifornimenti attuali
     final rifornimenti = ref.read(rifornimentiProvider).value ?? [];
-    
-    // Verifica se ci sono dati da esportare
+
     if (rifornimenti.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -124,45 +129,89 @@ class RifornimentiPage extends ConsumerWidget {
       );
       return;
     }
-    
-    // Mostra un indicatore di caricamento
-    showDialog(
+
+    try {
+      await RifornimentiExportService.exportAndShareJson(rifornimenti);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Esportati ${rifornimenti.length} rifornimenti'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Errore nell\'esportazione: $e'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  // NUOVO: Metodo per importare da JSON
+  Future<void> _importJson(BuildContext context, WidgetRef ref) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+
+    if (result == null || result.files.single.path == null) return;
+
+    final file = File(result.files.single.path!);
+    final jsonString = await file.readAsString();
+
+    if (!context.mounted) return;
+
+    final merge = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
+      builder: (context) => AlertDialog(
+        title: const Text('Importa rifornimenti'),
+        content: const Text(
+          'Vuoi aggiungere i rifornimenti importati a quelli esistenti '
+          '(saltando i duplicati per id) oppure sostituire completamente la lista?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annulla'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Sostituisci'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Unisci'),
+          ),
+        ],
       ),
     );
-    
+
+    if (merge == null) return;
+
     try {
-      // Esporta e condividi
-      await RifornimentiExportService.exportAndShareJson(rifornimenti);
-      
-      // Chiudi il dialog di caricamento
-      if (context.mounted) Navigator.pop(context);
-      
-      // Mostra conferma
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Esportati ${rifornimenti.length} rifornimenti'),
-            duration: const Duration(seconds: 2),
+      final count = await ref
+          .read(rifornimentiProvider.notifier)
+          .importRifornimenti(jsonString, merge: merge);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            merge
+                ? '$count nuovi rifornimenti importati'
+                : '$count rifornimenti importati (lista sostituita)',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
-      // Chiudi il dialog di caricamento
-      if (context.mounted) Navigator.pop(context);
-      
-      // Mostra errore
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Errore nell\'esportazione: $e'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Errore durante l\'importazione: $e')),
+      );
     }
   }
 
@@ -173,13 +222,15 @@ class RifornimentiPage extends ConsumerWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, WidgetRef ref, Rifornimento rifornimento) {
+  void _showEditDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Rifornimento rifornimento,
+  ) {
     showDialog(
       context: context,
-      builder: (context) => _AddRifornimentoDialog(
-        ref: ref,
-        rifornimento: rifornimento,
-      ),
+      builder: (context) =>
+          _AddRifornimentoDialog(ref: ref, rifornimento: rifornimento),
     );
   }
 }
@@ -212,10 +263,10 @@ class _VeicoloSelector extends StatelessWidget {
                 value: null,
                 child: Text('Tutti i veicoli'),
               ),
-              ...veicoli.map((v) => DropdownMenuItem<String?>(
-                value: v.id,
-                child: Text(v.nome),
-              )),
+              ...veicoli.map(
+                (v) =>
+                    DropdownMenuItem<String?>(value: v.id, child: Text(v.nome)),
+              ),
             ],
             onChanged: onChanged,
           ),
@@ -236,15 +287,9 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
+        Text(label, style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text(value, style: Theme.of(context).textTheme.titleMedium),
       ],
     );
   }
@@ -254,23 +299,22 @@ class _StatItem extends StatelessWidget {
 class _AddRifornimentoDialog extends ConsumerStatefulWidget {
   final WidgetRef ref;
   final Rifornimento? rifornimento;
-  
-  const _AddRifornimentoDialog({
-    required this.ref,
-    this.rifornimento,
-  });
+
+  const _AddRifornimentoDialog({required this.ref, this.rifornimento});
 
   @override
-  ConsumerState<_AddRifornimentoDialog> createState() => _AddRifornimentoDialogState();
+  ConsumerState<_AddRifornimentoDialog> createState() =>
+      _AddRifornimentoDialogState();
 }
 
-class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> {
+class _AddRifornimentoDialogState
+    extends ConsumerState<_AddRifornimentoDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _litriController;
   late final TextEditingController _costoController;
   late final TextEditingController _chilometraggioController;
   late final TextEditingController _noteController;
-  
+
   DateTime _data = DateTime.now();
   String _tipoCarburante = 'Benzina';
   String? _veicoloSelezionato;
@@ -280,9 +324,9 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
   @override
   void initState() {
     super.initState();
-    
+
     final rifornimento = widget.rifornimento;
-    
+
     _litriController = TextEditingController(
       text: rifornimento?.litri.toString() ?? '',
     );
@@ -292,10 +336,8 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
     _chilometraggioController = TextEditingController(
       text: rifornimento?.chilometraggio?.toString() ?? '',
     );
-    _noteController = TextEditingController(
-      text: rifornimento?.note ?? '',
-    );
-    
+    _noteController = TextEditingController(text: rifornimento?.note ?? '');
+
     if (rifornimento != null) {
       _data = rifornimento.data;
       _tipoCarburante = rifornimento.tipoCarburante;
@@ -315,7 +357,7 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
   @override
   Widget build(BuildContext context) {
     final veicoliAsync = ref.watch(veicoliProvider);
-    
+
     return AlertDialog(
       title: Text(isEditing ? 'Modifica Rifornimento' : 'Nuovo Rifornimento'),
       content: Form(
@@ -331,25 +373,28 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
                 data: (veicoli) {
                   return DropdownButtonFormField<String>(
                     value: _veicoloSelezionato,
-                    decoration: const InputDecoration(
-                      labelText: 'Veicolo',
-                    ),
-                    items: veicoli.map((v) => DropdownMenuItem<String>(
-                      value: v.id,
-                      child: Text(v.nome),
-                    )).toList(),
+                    decoration: const InputDecoration(labelText: 'Veicolo'),
+                    items: veicoli
+                        .map(
+                          (v) => DropdownMenuItem<String>(
+                            value: v.id,
+                            child: Text(v.nome),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (value) {
                       setState(() {
                         _veicoloSelezionato = value;
                       });
                     },
-                    validator: (value) => value == null ? 'Seleziona un veicolo' : null,
+                    validator: (value) =>
+                        value == null ? 'Seleziona un veicolo' : null,
                   );
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Campo litri
               TextFormField(
                 controller: _litriController,
@@ -369,7 +414,7 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Campo costo
               TextFormField(
                 controller: _costoController,
@@ -389,7 +434,7 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Campo chilometraggio
               TextFormField(
                 controller: _chilometraggioController,
@@ -401,18 +446,16 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
-              
+
               // Dropdown tipo carburante
               DropdownButtonFormField<String>(
                 value: _tipoCarburante,
-                decoration: const InputDecoration(
-                  labelText: 'Tipo Carburante',
-                ),
+                decoration: const InputDecoration(labelText: 'Tipo Carburante'),
                 items: ['Benzina', 'Diesel', 'GPL', 'Metano', 'Elettrico']
-                    .map((tipo) => DropdownMenuItem(
-                          value: tipo,
-                          child: Text(tipo),
-                        ))
+                    .map(
+                      (tipo) =>
+                          DropdownMenuItem(value: tipo, child: Text(tipo)),
+                    )
                     .toList(),
                 onChanged: (value) {
                   setState(() {
@@ -421,7 +464,7 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Campo note
               TextFormField(
                 controller: _noteController,
@@ -469,7 +512,8 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
           clearNote: _noteController.text.isEmpty,
         );
 
-        widget.ref.read(rifornimentiProvider.notifier)
+        widget.ref
+            .read(rifornimentiProvider.notifier)
             .updateRifornimento(rifornimentoAggiornato);
       } else {
         final rifornimento = Rifornimento(
@@ -484,10 +528,11 @@ class _AddRifornimentoDialogState extends ConsumerState<_AddRifornimentoDialog> 
           note: _noteController.text.isEmpty ? null : _noteController.text,
         );
 
-        widget.ref.read(rifornimentiProvider.notifier)
+        widget.ref
+            .read(rifornimentiProvider.notifier)
             .addRifornimento(rifornimento);
       }
-      
+
       Navigator.pop(context);
     }
   }

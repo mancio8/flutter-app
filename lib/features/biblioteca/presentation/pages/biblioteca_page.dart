@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/models/libro.dart';
 import '../../providers/biblioteca_provider.dart';
 import '../widgets/book_card.dart';
+import 'package:file_picker/file_picker.dart';
 
 class BibliotecaPage extends ConsumerWidget {
   const BibliotecaPage({super.key});
@@ -62,7 +63,11 @@ class BibliotecaPage extends ConsumerWidget {
               ),
             ),
             actions: [
-              // Pulsante export JSON
+              IconButton(
+                icon: const Icon(Icons.upload_file),
+                onPressed: () => _importJson(context, ref),
+                tooltip: 'Importa JSON',
+              ),
               IconButton(
                 icon: const Icon(Icons.download),
                 onPressed: () => _exportJson(context, ref),
@@ -89,11 +94,7 @@ class BibliotecaPage extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.sort,
-                    size: 20,
-                    color: theme.colorScheme.primary,
-                  ),
+                  Icon(Icons.sort, size: 20, color: theme.colorScheme.primary),
                   const SizedBox(width: 8),
                   const Text('Ordina per:'),
                   const SizedBox(width: 8),
@@ -104,10 +105,7 @@ class BibliotecaPage extends ConsumerWidget {
                       underline: const SizedBox(),
                       dropdownColor: theme.colorScheme.surface,
                       items: const [
-                        DropdownMenuItem(
-                          value: 'title',
-                          child: Text('Titolo'),
-                        ),
+                        DropdownMenuItem(value: 'title', child: Text('Titolo')),
                         DropdownMenuItem(
                           value: 'author',
                           child: Text('Autore'),
@@ -153,7 +151,7 @@ class BibliotecaPage extends ConsumerWidget {
               loading: () => const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
               ),
-              
+
               error: (e, _) => SliverFillRemaining(
                 child: Center(
                   child: Column(
@@ -176,7 +174,7 @@ class BibliotecaPage extends ConsumerWidget {
                   ),
                 ),
               ),
-              
+
               data: (libri) {
                 if (libri.isEmpty) {
                   return SliverFillRemaining(
@@ -193,17 +191,14 @@ class BibliotecaPage extends ConsumerWidget {
                     mainAxisSpacing: 16,
                     childAspectRatio: 0.65,
                   ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final libro = libri[index];
-                      return BookCard(
-                        libro: libro,
-                        onEdit: () => _showEditDialog(context, ref, libro),
-                        onDelete: () => _confirmDelete(context, ref, libro),
-                      );
-                    },
-                    childCount: libri.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final libro = libri[index];
+                    return BookCard(
+                      libro: libro,
+                      onEdit: () => _showEditDialog(context, ref, libro),
+                      onDelete: () => _confirmDelete(context, ref, libro),
+                    );
+                  }, childCount: libri.length),
                 );
               },
             ),
@@ -227,13 +222,77 @@ class BibliotecaPage extends ConsumerWidget {
 
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
     final jsonString = await ref.read(bibliotecaExportProvider.future);
-    
+
     final directory = await getApplicationDocumentsDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final file = File('${directory.path}/biblioteca_$timestamp.json');
     await file.writeAsString(jsonString);
-    
+
     await Share.shareXFiles([XFile(file.path)]);
+  }
+
+  Future<void> _importJson(BuildContext context, WidgetRef ref) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+
+    if (result == null || result.files.single.path == null) return;
+
+    final file = File(result.files.single.path!);
+    final jsonString = await file.readAsString();
+
+    if (!context.mounted) return;
+
+    final merge = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Importa libri'),
+        content: const Text(
+          'Vuoi aggiungere i libri importati a quelli esistenti '
+          '(saltando i duplicati) oppure sostituire completamente la libreria?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annulla'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Sostituisci'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Unisci'),
+          ),
+        ],
+      ),
+    );
+
+    if (merge == null) return;
+
+    try {
+      final count = await ref
+          .read(bibliotecaProvider.notifier)
+          .importJson(jsonString, merge: merge);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            merge
+                ? '$count nuovi libri importati'
+                : '$count libri importati (libreria sostituita)',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Errore durante l\'importazione: $e')),
+      );
+    }
   }
 
   void _showAddDialog(BuildContext context, WidgetRef ref) {
@@ -254,9 +313,7 @@ class BibliotecaPage extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Eliminare questo libro?'),
         content: Text('"${libro.titolo}" verrà eliminato definitivamente.'),
         actions: [
@@ -290,7 +347,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -358,7 +415,9 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
     super.initState();
     _titoloController = TextEditingController(text: widget.libro?.titolo ?? '');
     _autoreController = TextEditingController(text: widget.libro?.autore ?? '');
-    _copertinaController = TextEditingController(text: widget.libro?.copertinaUrl ?? '');
+    _copertinaController = TextEditingController(
+      text: widget.libro?.copertinaUrl ?? '',
+    );
     if (widget.libro != null) {
       _dataLettura = widget.libro!.dataLettura;
     }
@@ -375,11 +434,9 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
         padding: const EdgeInsets.all(24),
@@ -413,9 +470,9 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Campo titolo
                 TextFormField(
                   controller: _titoloController,
@@ -426,11 +483,12 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  validator: (v) => v == null || v.isEmpty ? 'Inserisci il titolo' : null,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Inserisci il titolo' : null,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Campo autore
                 TextFormField(
                   controller: _autoreController,
@@ -441,11 +499,12 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  validator: (v) => v == null || v.isEmpty ? 'Inserisci l\'autore' : null,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Inserisci l\'autore' : null,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Data lettura
                 InkWell(
                   onTap: () async {
@@ -474,9 +533,9 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // URL copertina
                 TextFormField(
                   controller: _copertinaController,
@@ -490,9 +549,9 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                   ),
                   keyboardType: TextInputType.url,
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Pulsanti
                 Row(
                   children: [
@@ -534,11 +593,15 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
   void _save() {
     if (_formKey.currentState!.validate()) {
       final libro = Libro(
-        id: widget.libro?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        id:
+            widget.libro?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         titolo: _titoloController.text,
         autore: _autoreController.text,
         dataLettura: _dataLettura,
-        copertinaUrl: _copertinaController.text.isEmpty ? null : _copertinaController.text,
+        copertinaUrl: _copertinaController.text.isEmpty
+            ? null
+            : _copertinaController.text,
       );
 
       if (isEditing) {
