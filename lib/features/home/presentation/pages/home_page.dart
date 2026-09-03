@@ -144,6 +144,10 @@ class HomePage extends ConsumerWidget {
                     },
                     child: const Text('Raccolta Differenziata'),
                   ),
+                  FilledButton.tonal(
+                    onPressed: () => context.go('/biblioteca'),
+                    child: const Text('Biblioteca'),
+                  ),
                 ],
               ),
 

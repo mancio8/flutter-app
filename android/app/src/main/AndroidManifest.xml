@@ -1,8 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permesso internet per caricare le immagini -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Permesso per verificare lo stato della rete -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    
     <application
-        android:label="flutter_starter"
+        android:label="Home"  
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">  <!-- IMPORTANTE: Permette HTTP -->
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -20,6 +20,7 @@ import '../../features/forms/presentation/pages/forms_example_page.dart';
 import '../../features/rifornimenti/presentation/pages/rifornimenti_page.dart'; // NUOVO IMPORT
 import '../../shared/widgets/responsive_scaffold.dart';
 import '../../features/raccolta/presentation/pages/raccolta_page.dart';
+import '../../features/biblioteca/presentation/pages/biblioteca_page.dart';
 
 
 
@@ -120,6 +121,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: '/biblioteca',
+            builder: (context, state) => const BibliotecaPage(),
           ),
           GoRoute(
             path: '/showcase/ui',

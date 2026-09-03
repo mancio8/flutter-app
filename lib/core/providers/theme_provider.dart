@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import '../constants/colors.dart';
-import '../../features/auth/presentation/providers/auth_provider.dart';
 
 part 'theme_provider.freezed.dart';
 
@@ -16,34 +15,27 @@ class ThemeState with _$ThemeState {
 }
 
 class ThemeNotifier extends StateNotifier<ThemeState> {
-  ThemeNotifier(this.prefs, this.ref)
+  ThemeNotifier(this.prefs)
       : super(
           ThemeState(
-            themeMode: ThemeMode.values[prefs.getInt(_themeModeKey) ?? 1], // Default to light mode
+            // Carica il tema salvato
+            themeMode: ThemeMode.values[prefs.getInt(_themeModeKey) ?? 1],
             colorSeed: ColorSeed.values[prefs.getInt(_colorSeedKey) ?? 0],
           ),
         );
 
   final SharedPreferences prefs;
-  final Ref ref;
   static const _themeModeKey = 'theme_mode';
   static const _colorSeedKey = 'color_seed';
 
+  // SALVA SEMPRE, senza controllare l'autenticazione
   Future<void> setThemeMode(ThemeMode mode) async {
-    // Only save to preferences if user is authenticated
-    final authState = ref.read(authProvider);
-    if (authState.isAuthenticated) {
-      await prefs.setInt(_themeModeKey, mode.index);
-    }
+    await prefs.setInt(_themeModeKey, mode.index);
     state = state.copyWith(themeMode: mode);
   }
 
   Future<void> setColorSeed(ColorSeed seed) async {
-    // Only save to preferences if user is authenticated
-    final authState = ref.read(authProvider);
-    if (authState.isAuthenticated) {
-      await prefs.setInt(_colorSeedKey, seed.index);
-    }
+    await prefs.setInt(_colorSeedKey, seed.index);
     state = state.copyWith(colorSeed: seed);
   }
 }
@@ -54,5 +46,5 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 
 final themeNotifierProvider = StateNotifierProvider<ThemeNotifier, ThemeState>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return ThemeNotifier(prefs, ref);
+  return ThemeNotifier(prefs);
 });
