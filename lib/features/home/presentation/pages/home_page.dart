@@ -49,12 +49,7 @@ class HomePage extends ConsumerWidget {
                 Icons.rocket_launch,
                 size: 80,
                 color: Theme.of(context).colorScheme.primary,
-              )
-                  .animate()
-                  .scale(
-                    duration: 600.ms,
-                    curve: Curves.easeOutBack,
-                  ),
+              ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
 
               const SizedBox(height: 24),
 
@@ -65,11 +60,7 @@ class HomePage extends ConsumerWidget {
                 l10n.welcomeTitle,
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
-              )
-                  .animate()
-                  .fadeIn(
-                    delay: 200.ms,
-                  ),
+              ).animate().fadeIn(delay: 200.ms),
 
               const SizedBox(height: 16),
 
@@ -80,11 +71,7 @@ class HomePage extends ConsumerWidget {
                 l10n.welcomeSubtitle,
                 style: Theme.of(context).textTheme.bodyLarge,
                 textAlign: TextAlign.center,
-              )
-                  .animate()
-                  .fadeIn(
-                    delay: 400.ms,
-                  ),
+              ).animate().fadeIn(delay: 400.ms),
 
               const SizedBox(height: 48),
 
@@ -148,6 +135,10 @@ class HomePage extends ConsumerWidget {
                     onPressed: () => context.go('/biblioteca'),
                     child: const Text('Biblioteca'),
                   ),
+                  FilledButton.tonal(
+                    onPressed: () => context.go('/dashboard'),
+                    child: const Text('Riepilogo'),
+                  ),
                 ],
               ),
 
@@ -208,10 +199,9 @@ class HomePage extends ConsumerWidget {
                                   .withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.3),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -237,9 +227,9 @@ class HomePage extends ConsumerWidget {
                                             .titleSmall
                                             ?.copyWith(
                                               fontWeight: FontWeight.bold,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
                                             ),
                                       ),
 
@@ -247,9 +237,9 @@ class HomePage extends ConsumerWidget {
 
                                       Text(
                                         l10n.loginToAccessPersonalization,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
                                     ],
                                   ),
@@ -271,15 +261,13 @@ class HomePage extends ConsumerWidget {
                     ],
                   ),
                 ),
-              )
-                  .animate()
-                  .slideY(
-                    begin: 0.1,
-                    end: 0,
-                    delay: 600.ms,
-                    duration: 400.ms,
-                    curve: Curves.easeOutCubic,
-                  ),
+              ).animate().slideY(
+                begin: 0.1,
+                end: 0,
+                delay: 600.ms,
+                duration: 400.ms,
+                curve: Curves.easeOutCubic,
+              ),
 
               // Spazio finale per rendere più piacevole lo scroll
               const SizedBox(height: 16),
@@ -313,11 +301,7 @@ class _FeatureItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            size: 24,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
 
           const SizedBox(width: 16),
 
@@ -325,17 +309,11 @@ class _FeatureItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
+                Text(title, style: Theme.of(context).textTheme.titleSmall),
 
                 const SizedBox(height: 4),
 
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text(description, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
