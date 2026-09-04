@@ -97,6 +97,12 @@ class HomePage extends StatelessWidget {
                     color: Colors.amber[800]!,
                     onTap: () => context.go('/note'),
                   ),
+                  _AppTile(
+                    icon: Icons.checklist_rtl,
+                    label: 'Abitudini',
+                    color: Colors.teal,
+                    onTap: () => context.go('/habits'),
+                  ),
                 ],
               ).animate().fadeIn(delay: 300.ms),
 

@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
 import '../models/notification.dart';
-import '../models/dashboard_stats.dart';
+
 
 class MockApiService {
   final Random _random = Random();
@@ -112,54 +112,8 @@ class MockApiService {
     }
   }
   
-  // Dashboard endpoints
-  Future<DashboardStats> getDashboardStats() async {
-    await _simulateNetworkDelay();
+   
     
-    final activeUsers = _users.where((u) => u.isActive).length;
-    final totalRevenue = _random.nextInt(1000000) + 500000;
-    final growthRate = (_random.nextDouble() * 50) - 10; // -10% to +40%
-    
-    // Generate chart data
-    final userGrowthData = List.generate(7, (index) {
-      final day = DateTime.now().subtract(Duration(days: 6 - index));
-      return ChartData(
-        label: '${day.month}/${day.day}',
-        value: (_random.nextInt(50) + 100).toDouble(),
-      );
-    });
-    
-    final revenueData = List.generate(7, (index) {
-      final day = DateTime.now().subtract(Duration(days: 6 - index));
-      return ChartData(
-        label: '${day.month}/${day.day}',
-        value: (_random.nextInt(50000) + 50000).toDouble(),
-      );
-    });
-    
-    // Generate recent activities
-    final recentActivities = List.generate(10, (index) {
-      final user = _users[_random.nextInt(_users.length)];
-      return ActivityItem(
-        id: 'activity_$index',
-        description: _getRandomActivity(),
-        userId: user.id,
-        userName: user.name,
-        timestamp: DateTime.now().subtract(Duration(minutes: _random.nextInt(1440))),
-        type: _getRandomActivityType(),
-      );
-    });
-    
-    return DashboardStats(
-      totalUsers: _users.length,
-      activeUsers: activeUsers,
-      totalRevenue: totalRevenue,
-      growthRate: growthRate,
-      userGrowthData: userGrowthData,
-      revenueData: revenueData,
-      recentActivities: recentActivities,
-    );
-  }
   
   // Search functionality
   Future<List<User>> searchUsers(String query) async {

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../habits/providers/habits_provider.dart';
 import '../../../biblioteca/providers/biblioteca_provider.dart';
 import '../../../rifornimenti/providers/rifornimenti_provider.dart';
 import '../../../raccolta/providers/raccolta_provider.dart';
@@ -198,5 +199,31 @@ final noteSummaryProvider = Provider<NoteSummary>((ref) {
     },
     loading: () => const NoteSummary(totaleNote: 0, noteUrgenti: 0, noteFissate: 0),
     error: (_, __) => const NoteSummary(totaleNote: 0, noteUrgenti: 0, noteFissate: 0),
+  );
+});
+
+// --- Habits ---
+class HabitsSummary {
+  final int completatiOggi;
+  final int totale;
+  final double percentuale;
+  final int migliorStreak;
+
+  const HabitsSummary({
+    required this.completatiOggi,
+    required this.totale,
+    required this.percentuale,
+    required this.migliorStreak,
+  });
+}
+
+final habitsSummaryProvider = Provider<HabitsSummary>((ref) {
+  final stats = ref.watch(habitsStatsProvider);
+  
+  return HabitsSummary(
+    completatiOggi: stats.completatiOggi,
+    totale: stats.totale,
+    percentuale: stats.percentuale,
+    migliorStreak: stats.migliorStreak,
   );
 });

@@ -13,6 +13,7 @@ class DashboardPage extends ConsumerWidget {
     final rifornimenti = ref.watch(rifornimentiSummaryProvider);
     final raccolta = ref.watch(raccoltaSummaryProvider);
     final note = ref.watch(noteSummaryProvider);
+    final habits = ref.watch(habitsSummaryProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Riepilogo')),
@@ -76,6 +77,18 @@ class DashboardPage extends ConsumerWidget {
               ],
             ],
             onTap: () => context.go('/note'),
+          ),
+          const SizedBox(height: 12),
+          _SummaryCard(
+            icon: Icons.check_circle,
+            color: Colors.green,
+            title: 'Habit Tracker',
+            lines: [
+              '${habits.completatiOggi}/${habits.totale} completati oggi',
+              if (habits.migliorStreak > 0)
+                'Miglior streak: ${habits.migliorStreak} giorni',
+            ],
+            onTap: () => context.go('/habits'),
           ),
         ],
       ),

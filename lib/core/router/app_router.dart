@@ -22,6 +22,7 @@ import '../../shared/widgets/responsive_scaffold.dart';
 import '../../features/raccolta/presentation/pages/raccolta_page.dart';
 import '../../features/biblioteca/presentation/pages/biblioteca_page.dart';
 import '../../features/note/presentation/pages/note_page.dart';
+import '../../features/habits/presentation/pages/habits_page.dart';
 
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
@@ -153,6 +154,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/forms',
             builder: (context, state) => const FormsExamplePage(),
+          ),
+          GoRoute(
+            path: '/habits',
+            builder: (context, state) => const HabitsPage(),
           ),
         ],
       ),
