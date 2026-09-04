@@ -12,6 +12,7 @@ class DashboardPage extends ConsumerWidget {
     final biblioteca = ref.watch(bibliotecaSummaryProvider);
     final rifornimenti = ref.watch(rifornimentiSummaryProvider);
     final raccolta = ref.watch(raccoltaSummaryProvider);
+    final note = ref.watch(noteSummaryProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Riepilogo')),
@@ -59,6 +60,22 @@ class DashboardPage extends ConsumerWidget {
                 'Domani: ${raccolta.tipoDomani}',
             ],
             onTap: () => context.go('/raccolta'),
+          ),
+          const SizedBox(height: 12),
+          _SummaryCard(
+            icon: Icons.sticky_note_2_outlined,
+            color: Colors.amber[800]!,
+            title: 'Note',
+            lines: [
+              if (note.totaleNote == 0)
+                'Nessuna nota'
+              else ...[
+                '${note.totaleNote} note totali',
+                if (note.noteUrgenti > 0) '${note.noteUrgenti} urgenti',
+                if (note.noteFissate > 0) '${note.noteFissate} fissate',
+              ],
+            ],
+            onTap: () => context.go('/note'),
           ),
         ],
       ),

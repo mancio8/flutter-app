@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../biblioteca/providers/biblioteca_provider.dart';
 import '../../../rifornimenti/providers/rifornimenti_provider.dart';
 import '../../../raccolta/providers/raccolta_provider.dart';
+import '../../../note/providers/note_provider.dart';
+import '../../../../core/models/nota.dart';
 
 // --- Biblioteca ---
 class BibliotecaSummary {
@@ -165,5 +167,36 @@ final raccoltaSummaryProvider = Provider<RaccoltaSummary>((ref) {
       raccoltaDomani: domaniHaRaccolta,
       tipoDomani: tipoDomani,
     ),
+  );
+});
+
+// --- Note ---
+class NoteSummary {
+  final int totaleNote;
+  final int noteUrgenti;
+  final int noteFissate;
+
+  const NoteSummary({
+    required this.totaleNote,
+    required this.noteUrgenti,
+    required this.noteFissate,
+  });
+}
+
+final noteSummaryProvider = Provider<NoteSummary>((ref) {
+  final noteAsync = ref.watch(noteProvider);
+
+  return noteAsync.when(
+    data: (note) {
+      final urgenti = note.where((n) => n.categoria == CategoriaNota.urgente).length;
+      final fissate = note.where((n) => n.fissata).length;
+      return NoteSummary(
+        totaleNote: note.length,
+        noteUrgenti: urgenti,
+        noteFissate: fissate,
+      );
+    },
+    loading: () => const NoteSummary(totaleNote: 0, noteUrgenti: 0, noteFissate: 0),
+    error: (_, __) => const NoteSummary(totaleNote: 0, noteUrgenti: 0, noteFissate: 0),
   );
 });

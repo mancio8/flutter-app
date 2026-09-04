@@ -1,276 +1,215 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../l10n/app_localizations.dart';
-import '../../../../features/auth/presentation/providers/auth_provider.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final authState = ref.watch(authProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.home),
-        actions: [
-          if (authState.isAuthenticated)
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                ref.read(authProvider.notifier).logout();
-              },
-              tooltip: l10n.logout,
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.login),
-              onPressed: () {
-                context.go('/login');
-              },
-              tooltip: l10n.login,
-            ),
-        ],
-      ),
+      appBar: AppBar(title: Text(l10n.home)),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ============================================================
-              // ICONA
+              // HERO
               // ============================================================
-              Icon(
-                Icons.rocket_launch,
-                size: 80,
-                color: Theme.of(context).colorScheme.primary,
-              ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+              Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.rocket_launch,
+                      size: 72,
+                      color: theme.colorScheme.primary,
+                    ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+                    const SizedBox(height: 20),
+                    Text(
+                      l10n.welcomeTitle,
+                      style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ).animate().fadeIn(delay: 200.ms),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.welcomeSubtitle,
+                      style: theme.textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    ).animate().fadeIn(delay: 400.ms),
+                  ],
+                ),
+              ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 36),
 
               // ============================================================
-              // TITOLO
+              // LE TUE APP
               // ============================================================
               Text(
-                l10n.welcomeTitle,
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
-              ).animate().fadeIn(delay: 200.ms),
-
-              const SizedBox(height: 16),
-
-              // ============================================================
-              // SOTTOTITOLO
-              // ============================================================
-              Text(
-                l10n.welcomeSubtitle,
-                style: Theme.of(context).textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ).animate().fadeIn(delay: 400.ms),
-
-              const SizedBox(height: 48),
-
-              // ============================================================
-              // PULSANTI
-              // ============================================================
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 16,
-                runSpacing: 16,
+                'Le tue app',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              GridView.count(
+                crossAxisCount: _getCrossAxisCount(context),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.3,
                 children: [
-                  FilledButton.tonal(
-                    onPressed: () {
-                      context.go('/showcase/ui');
-                    },
-                    child: Text(l10n.uiComponents),
+                  _AppTile(
+                    icon: Icons.dashboard_outlined,
+                    label: 'Riepilogo',
+                    color: theme.colorScheme.primary,
+                    onTap: () => context.go('/dashboard'),
                   ),
-
-                  FilledButton.tonal(
-                    onPressed: () {
-                      context.go('/showcase/skeletons');
-                    },
-                    child: Text(l10n.loadingSkeletons),
+                  _AppTile(
+                    icon: Icons.menu_book,
+                    label: 'Biblioteca',
+                    color: theme.colorScheme.primary,
+                    onTap: () => context.go('/biblioteca'),
                   ),
-
-                  FilledButton.tonal(
-                    onPressed: () {
-                      context.go('/showcase/errors');
-                    },
-                    child: Text(l10n.errorHandling),
+                  _AppTile(
+                    icon: Icons.local_gas_station,
+                    label: 'Rifornimenti',
+                    color: Colors.orange,
+                    onTap: () => context.go('/rifornimenti'),
                   ),
-
-                  FilledButton.tonal(
-                    onPressed: () {
-                      context.go('/showcase/upload');
-                    },
-                    child: Text(l10n.fileUpload),
+                  _AppTile(
+                    icon: Icons.recycling,
+                    label: 'Raccolta',
+                    color: const Color(0xFF2E7D32),
+                    onTap: () => context.go('/raccolta'),
                   ),
-
-                  FilledButton.tonal(
-                    onPressed: () {
-                      context.go('/showcase/language');
-                    },
-                    child: Text(l10n.language),
-                  ),
-
-                  FilledButton.tonal(
-                    onPressed: () {
-                      context.go('/forms');
-                    },
-                    child: Text(l10n.forms),
-                  ),
-
-                  FilledButton.tonal(
-                    onPressed: () {
-                      context.go('/raccolta');
-                    },
-                    child: const Text('Raccolta Differenziata'),
-                  ),
-                  FilledButton.tonal(
-                    onPressed: () => context.go('/biblioteca'),
-                    child: const Text('Biblioteca'),
-                  ),
-                  FilledButton.tonal(
-                    onPressed: () => context.go('/dashboard'),
-                    child: const Text('Riepilogo'),
+                  _AppTile(
+                    icon: Icons.sticky_note_2_outlined,
+                    label: 'Note',
+                    color: Colors.amber[800]!,
+                    onTap: () => context.go('/note'),
                   ),
                 ],
-              ),
+              ).animate().fadeIn(delay: 300.ms),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // ============================================================
-              // FEATURES CARD
+              // DEMO / COMPONENTI
               // ============================================================
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.features,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _FeatureItem(
-                        icon: Icons.palette,
-                        title: l10n.material3Design,
-                        description: l10n.material3Description,
-                      ),
-
-                      _FeatureItem(
-                        icon: Icons.color_lens,
-                        title: l10n.dynamicTheming,
-                        description: l10n.dynamicThemingDescription,
-                      ),
-
-                      _FeatureItem(
-                        icon: Icons.devices,
-                        title: l10n.responsiveLayout,
-                        description: l10n.responsiveLayoutDescription,
-                      ),
-
-                      _FeatureItem(
-                        icon: Icons.security,
-                        title: l10n.authenticationReady,
-                        description: l10n.authenticationDescription,
-                      ),
-
-                      // ======================================================
-                      // GUEST MODE
-                      // ======================================================
-                      if (!authState.isAuthenticated)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer
-                                  .withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-
-                                const SizedBox(width: 12),
-
-                                // Testo
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        l10n.guestModeInHome,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                            ),
-                                      ),
-
-                                      const SizedBox(height: 4),
-
-                                      Text(
-                                        l10n.loginToAccessPersonalization,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(width: 8),
-
-                                // Login
-                                TextButton(
-                                  onPressed: () {
-                                    context.go('/login');
-                                  },
-                                  child: Text(l10n.login),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+              Text(
+                'Demo e componenti',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-              ).animate().slideY(
-                begin: 0.1,
-                end: 0,
-                delay: 600.ms,
-                duration: 400.ms,
-                curve: Curves.easeOutCubic,
               ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _DemoChip(
+                    label: l10n.uiComponents,
+                    onTap: () => context.go('/showcase/ui'),
+                  ),
+                  _DemoChip(
+                    label: l10n.loadingSkeletons,
+                    onTap: () => context.go('/showcase/skeletons'),
+                  ),
+                  _DemoChip(
+                    label: l10n.errorHandling,
+                    onTap: () => context.go('/showcase/errors'),
+                  ),
+                  _DemoChip(
+                    label: l10n.fileUpload,
+                    onTap: () => context.go('/showcase/upload'),
+                  ),
+                  _DemoChip(
+                    label: l10n.language,
+                    onTap: () => context.go('/showcase/language'),
+                  ),
+                  _DemoChip(
+                    label: l10n.forms,
+                    onTap: () => context.go('/forms'),
+                  ),
+                ],
+              ).animate().fadeIn(delay: 400.ms),
 
-              // Spazio finale per rendere più piacevole lo scroll
+              const SizedBox(height: 32),
+
               const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _getCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width > 900) return 4;
+    if (width > 600) return 3;
+    return 2;
+  }
+}
+
+// ============================================================================
+// APP TILE (card per le app principali)
+// ============================================================================
+
+class _AppTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _AppTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 1,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
@@ -280,45 +219,25 @@ class HomePage extends ConsumerWidget {
 }
 
 // ============================================================================
-// FEATURE ITEM
+// DEMO CHIP
 // ============================================================================
 
-class _FeatureItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
+class _DemoChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
 
-  const _FeatureItem({
-    required this.icon,
-    required this.title,
-    required this.description,
-  });
+  const _DemoChip({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
-
-          const SizedBox(width: 16),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.titleSmall),
-
-                const SizedBox(height: 4),
-
-                Text(description, style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return ActionChip(
+      label: Text(label),
+      onPressed: onTap,
     );
   }
 }
+
+// ============================================================================
+// FEATURE ITEM
+// ============================================================================
+

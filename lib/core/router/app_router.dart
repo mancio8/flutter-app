@@ -21,7 +21,7 @@ import '../../features/rifornimenti/presentation/pages/rifornimenti_page.dart'; 
 import '../../shared/widgets/responsive_scaffold.dart';
 import '../../features/raccolta/presentation/pages/raccolta_page.dart';
 import '../../features/biblioteca/presentation/pages/biblioteca_page.dart';
-
+import '../../features/note/presentation/pages/note_page.dart';
 
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
@@ -125,6 +125,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/biblioteca',
             builder: (context, state) => const BibliotecaPage(),
+          ),
+          GoRoute(
+            path: '/note',
+            builder: (context, state) => const NotePage(),
           ),
           GoRoute(
             path: '/showcase/ui',
