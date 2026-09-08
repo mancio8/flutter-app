@@ -1,8 +1,8 @@
+import 'package:flutter_starter/features/auth/presentation/pages/register_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
-import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
@@ -23,7 +23,7 @@ import '../../features/raccolta/presentation/pages/raccolta_page.dart';
 import '../../features/biblioteca/presentation/pages/biblioteca_page.dart';
 import '../../features/note/presentation/pages/note_page.dart';
 import '../../features/habits/presentation/pages/habits_page.dart';
-
+import '../../features/allenamenti/presentation/pages/allenamenti_page.dart';
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
   // This will be updated when onboarding is completed
@@ -33,47 +33,48 @@ final onboardingCompletedProvider = StateProvider<bool>((ref) {
 final _onboardingInitProvider = FutureProvider<bool>((ref) async {
   final prefs = await SharedPreferences.getInstance();
   final completed = prefs.getBool('onboarding_completed') ?? false;
-  
+
   // Update the state provider with the loaded value
   Future.microtask(() {
     ref.read(onboardingCompletedProvider.notifier).state = completed;
   });
-  
+
   return completed;
 });
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
   final onboardingCompleted = ref.watch(onboardingCompletedProvider);
-  
+
   // Initialize onboarding state from preferences
   ref.watch(_onboardingInitProvider);
-  
+
   return GoRouter(
     initialLocation: onboardingCompleted ? '/home' : '/onboarding',
     redirect: (context, state) {
       final isAuthenticated = authState.isAuthenticated;
-      final isAuthRoute = state.matchedLocation == '/login' || 
-                         state.matchedLocation == '/register';
+      final isAuthRoute =
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/register';
       final isOnboardingRoute = state.matchedLocation == '/onboarding';
-      
-      // Check onboarding first for new users
+
       if (!onboardingCompleted && !isOnboardingRoute) {
         return '/onboarding';
       }
-      
-      // Redirect authenticated users away from auth pages
+
+      // NUOVO: forza il login se non autenticato
+      if (!isAuthenticated && !isAuthRoute && !isOnboardingRoute) {
+        return '/login';
+      }
+
       if (isAuthenticated && isAuthRoute) {
         return '/home';
       }
-      
+
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginPage(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
@@ -85,10 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => ResponsiveScaffold(child: child),
         routes: [
-          GoRoute(
-            path: '/home',
-            builder: (context, state) => const HomePage(),
-          ),
+          GoRoute(path: '/home', builder: (context, state) => const HomePage()),
           GoRoute(
             path: '/dashboard',
             builder: (context, state) => const DashboardPage(),
@@ -127,10 +125,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/biblioteca',
             builder: (context, state) => const BibliotecaPage(),
           ),
-          GoRoute(
-            path: '/note',
-            builder: (context, state) => const NotePage(),
-          ),
+          GoRoute(path: '/note', builder: (context, state) => const NotePage()),
           GoRoute(
             path: '/showcase/ui',
             builder: (context, state) => const UIShowcasePage(),
@@ -158,6 +153,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/habits',
             builder: (context, state) => const HabitsPage(),
+          ),
+          GoRoute(
+            path: '/allenamenti',
+            builder: (context, state) => const AllenamentiPage(),
           ),
         ],
       ),

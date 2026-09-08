@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/nota.dart';
 import '../repository/note_repository.dart';
+import '../../../core/providers/supabase_provider.dart';
 
 final noteRepositoryProvider = Provider<NoteRepository>((ref) {
-  return NoteRepository();
+  final supabase = ref.watch(supabaseProvider);
+  return NoteRepository(supabase);
 });
 
 // Filtro categoria (null = tutte)
@@ -15,6 +17,12 @@ class NoteNotifier extends AsyncNotifier<List<Nota>> {
     final repository = ref.watch(noteRepositoryProvider);
     final note = await repository.getNote();
     return _ordina(note);
+  }
+
+  Future<void> refreshNote() async {
+    final repository = ref.read(noteRepositoryProvider);
+    final note = await repository.getNote();
+    state = AsyncValue.data(_ordina(note));
   }
 
   // Fissate in cima, poi per data decrescente
@@ -31,7 +39,9 @@ class NoteNotifier extends AsyncNotifier<List<Nota>> {
 
   Future<void> addNota(Nota nota) async {
     final repository = ref.read(noteRepositoryProvider);
-    await repository.addNota(nota);
+    await repository.addNota(
+      nota,
+    ); // non serve più usare l'id locale, il DB genera il suo
     await _reload();
   }
 
@@ -49,7 +59,12 @@ class NoteNotifier extends AsyncNotifier<List<Nota>> {
 
   Future<void> togglePin(String id) async {
     final repository = ref.read(noteRepositoryProvider);
-    await repository.togglePin(id);
+
+    // Trova il valore attuale per invertirlo
+    final noteAttuali = state.value ?? [];
+    final nota = noteAttuali.firstWhere((n) => n.id == id);
+
+    await repository.togglePin(id, !nota.fissata);
     await _reload();
   }
 

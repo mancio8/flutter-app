@@ -1,73 +1,79 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/models/nota.dart';
 
 class NoteRepository {
-  static const String _storageKey = 'note_list';
-  List<Nota> _note = [];
+  final SupabaseClient _client;
 
-  Future<void> _loadFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? jsonString = prefs.getString(_storageKey);
+  NoteRepository(this._client);
 
-    if (jsonString != null) {
-      final List<dynamic> jsonList = json.decode(jsonString);
-      _note = jsonList
-          .map((json) => Nota.fromJson(json as Map<String, dynamic>))
-          .toList();
-    }
-  }
-
-  Future<void> _saveToStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String jsonString = json.encode(
-      _note.map((n) => n.toJson()).toList(),
-    );
-    await prefs.setString(_storageKey, jsonString);
-  }
+  String get _userId => _client.auth.currentUser?.id ?? '';
 
   Future<List<Nota>> getNote() async {
-    if (_note.isEmpty) {
-      await _loadFromStorage();
+    if (_userId.isEmpty) {
+      throw Exception('Utente non autenticato');
     }
-    return List.unmodifiable(_note);
+
+    final response = await _client
+        .from('note')
+        .select()
+        .eq('user_id', _userId)
+        .order('data_creazione', ascending: false);
+
+    return (response as List)
+        .map((json) => Nota.fromJson(json))
+        .toList();
   }
 
-  Future<void> addNota(Nota nota) async {
-    if (_note.isEmpty) {
-      await _loadFromStorage();
+  Future<Nota> addNota(Nota nota) async {
+    final user = _client.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('Utente non autenticato');
     }
-    _note.add(nota);
-    await _saveToStorage();
+
+    final response = await _client
+        .from('note')
+        .insert({
+          'user_id': user.id,
+          'testo': nota.testo,
+          'categoria': nota.categoria.name,
+          'colore': nota.colore,
+          'fissata': nota.fissata,
+        })
+        .select()
+        .single();
+
+    return Nota.fromJson(response);
   }
 
   Future<void> updateNota(Nota nota) async {
-    if (_note.isEmpty) {
-      await _loadFromStorage();
-    }
-    final index = _note.indexWhere((n) => n.id == nota.id);
-    if (index != -1) {
-      _note[index] = nota;
-      await _saveToStorage();
-    }
+    await _client
+        .from('note')
+        .update({
+          'testo': nota.testo,
+          'categoria': nota.categoria.name,
+          'colore': nota.colore,
+          'fissata': nota.fissata,
+        })
+        .eq('id', nota.id)
+        .eq('user_id', _userId);
   }
 
   Future<void> deleteNota(String id) async {
-    if (_note.isEmpty) {
-      await _loadFromStorage();
-    }
-    _note.removeWhere((n) => n.id == id);
-    await _saveToStorage();
+    await _client
+        .from('note')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _userId);
   }
 
-  Future<void> togglePin(String id) async {
-    if (_note.isEmpty) {
-      await _loadFromStorage();
-    }
-    final index = _note.indexWhere((n) => n.id == id);
-    if (index != -1) {
-      _note[index] = _note[index].copyWith(fissata: !_note[index].fissata);
-      await _saveToStorage();
-    }
+  Future<void> togglePin(String id, bool nuovoValore) async {
+    await _client
+        .from('note')
+        .update({
+          'fissata': nuovoValore,
+        })
+        .eq('id', id)
+        .eq('user_id', _userId);
   }
 }

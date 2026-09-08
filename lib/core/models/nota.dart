@@ -40,17 +40,16 @@ extension CategoriaNotaExtension on CategoriaNota {
   }
 }
 
-// Colori disponibili per le note (stile sticky notes)
 class ColoreNota {
   static const List<Color> palette = [
-    Color(0xFFFFF9C4), // giallo
-    Color(0xFFFFCCBC), // arancio
-    Color(0xFFC8E6C9), // verde
-    Color(0xFFB3E5FC), // azzurro
-    Color(0xFFE1BEE7), // viola
-    Color(0xFFF8BBD0), // rosa
-    Color(0xFFD7CCC8), // marrone chiaro
-    Color(0xFFCFD8DC), // grigio
+    Color(0xFFFFF9C4),
+    Color(0xFFFFCCBC),
+    Color(0xFFC8E6C9),
+    Color(0xFFB3E5FC),
+    Color(0xFFE1BEE7),
+    Color(0xFFF8BBD0),
+    Color(0xFFD7CCC8),
+    Color(0xFFCFD8DC),
   ];
 
   static Color fromValue(int value) => Color(value);
@@ -60,7 +59,7 @@ class Nota {
   final String id;
   final String testo;
   final CategoriaNota categoria;
-  final int colore; // valore ARGB del colore
+  final int colore;
   final DateTime dataCreazione;
   final bool fissata;
 
@@ -97,21 +96,23 @@ class Nota {
       'testo': testo,
       'categoria': categoria.name,
       'colore': colore,
-      'dataCreazione': dataCreazione.toIso8601String(),
+      'data_creazione': dataCreazione.toIso8601String(),
       'fissata': fissata,
     };
   }
 
   factory Nota.fromJson(Map<String, dynamic> json) {
     return Nota(
-      id: json['id'],
+      id: json['id'].toString(),
       testo: json['testo'] ?? '',
       categoria: CategoriaNota.values.firstWhere(
         (c) => c.name == json['categoria'],
         orElse: () => CategoriaNota.generale,
       ),
       colore: json['colore'] ?? ColoreNota.palette[0].value,
-      dataCreazione: DateTime.parse(json['dataCreazione']),
+      dataCreazione: DateTime.parse(
+        json['data_creazione'].toString(),
+      ),
       fissata: json['fissata'] ?? false,
     );
   }

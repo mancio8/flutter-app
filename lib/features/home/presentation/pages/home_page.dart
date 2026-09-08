@@ -103,6 +103,12 @@ class HomePage extends StatelessWidget {
                     color: Colors.teal,
                     onTap: () => context.go('/habits'),
                   ),
+                  _AppTile(
+                    icon: Icons.fitness_center,
+                    label: 'Allenamenti',
+                    color: Colors.deepPurple,
+                    onTap: () => context.go('/allenamenti'),
+                  ),
                 ],
               ).animate().fadeIn(delay: 300.ms),
 

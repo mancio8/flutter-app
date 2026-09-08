@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
-import '../../../../l10n/app_localizations.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -12,10 +11,12 @@ class RegisterPage extends ConsumerStatefulWidget {
 }
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
-  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -28,106 +29,263 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    
-    ref.listen(authProvider, (previous, next) {
-      if (next.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.error!)),
-        );
-      }
-    });
+    final theme = Theme.of(context);
 
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context).createAccount,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).email,
-                        prefixIcon: Icon(Icons.email_outlined),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.colorScheme.primaryContainer.withOpacity(0.3),
+              theme.colorScheme.surface,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo o Icona
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.person_add_outlined,
+                          size: 50,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return AppLocalizations.of(context).pleaseEnterEmail;
-                        }
-                        if (!value.contains('@')) {
-                          return AppLocalizations.of(context).pleaseEnterValidEmail;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).password,
-                        prefixIcon: Icon(Icons.lock_outline),
+                      const SizedBox(height: 32),
+                      
+                      // Titolo
+                      Text(
+                        'Crea Account',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return AppLocalizations.of(context).pleaseEnterPassword;
-                        }
-                        if (value.length < 6) {
-                          return AppLocalizations.of(context).passwordMustBe6Chars;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context).confirmPassword,
-                        prefixIcon: Icon(Icons.lock_outline),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Registrati per iniziare a utilizzare l\'app',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return AppLocalizations.of(context).pleaseConfirmPassword;
-                        }
-                        if (value != _passwordController.text) {
-                          return AppLocalizations.of(context).passwordsDoNotMatch;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: authState.isLoading ? null : _onRegister,
+                      const SizedBox(height: 32),
+                      
+                      // Email Field
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          hintText: 'nome@esempio.com',
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: theme.colorScheme.surface,
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Inserisci la tua email';
+                          }
+                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          if (!emailRegex.hasMatch(value)) {
+                            return 'Inserisci un email valida';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Password Field
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          hintText: 'Minimo 6 caratteri',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: theme.colorScheme.surface,
+                        ),
+                        obscureText: _obscurePassword,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Inserisci la password';
+                          }
+                          if (value.length < 6) {
+                            return 'La password deve essere di almeno 6 caratteri';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Confirm Password Field
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        decoration: InputDecoration(
+                          labelText: 'Conferma Password',
+                          hintText: 'Reinserisci la password',
+                          prefixIcon: const Icon(Icons.lock_reset_outlined),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: theme.colorScheme.surface,
+                        ),
+                        obscureText: _obscureConfirmPassword,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _handleRegister(ref),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Conferma la password';
+                          }
+                          if (value != _passwordController.text) {
+                            return 'Le password non coincidono';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Error Message
+                      if (authState.error != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: theme.colorScheme.error,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  authState.error!,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (authState.error != null) const SizedBox(height: 16),
+                      
+                      // Register Button
+                      ElevatedButton(
+                        onPressed: authState.isLoading ? null : () => _handleRegister(ref),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
                         child: authState.isLoading
                             ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2.5),
                               )
-                            : Text(AppLocalizations.of(context).createAccount),
+                            : const Text(
+                                'Registrati',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () => context.go('/login'),
-                      child: Text(AppLocalizations.of(context).alreadyHaveAccount),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      
+                      // Login Link
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Hai già un account?',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/login'),
+                            child: const Text('Accedi'),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Terms and Conditions
+                      Text(
+                        'Registrandoti accetti i nostri Termini di Servizio e la Privacy Policy',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -137,12 +295,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     );
   }
 
-  void _onRegister() {
-    if (_formKey.currentState!.validate()) {
-      ref.read(authProvider.notifier).register(
-        _emailController.text,
-        _passwordController.text,
-      );
+  void _handleRegister(WidgetRef ref) {
+    if (_formKey.currentState?.validate() ?? false) {
+      FocusScope.of(context).unfocus();
+      ref.read(authProvider.notifier).signUp(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
     }
   }
 }

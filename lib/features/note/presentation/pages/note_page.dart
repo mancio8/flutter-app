@@ -27,14 +27,18 @@ class NotePage extends ConsumerWidget {
                 _CategoriaChip(
                   label: 'Tutte',
                   selezionata: filtro == null,
-                  onTap: () => ref.read(filtroCategoriaProvider.notifier).state = null,
+                  onTap: () =>
+                      ref.read(filtroCategoriaProvider.notifier).state = null,
                 ),
-                ...CategoriaNota.values.map((c) => _CategoriaChip(
-                      label: c.label,
-                      icon: c.icon,
-                      selezionata: filtro == c,
-                      onTap: () => ref.read(filtroCategoriaProvider.notifier).state = c,
-                    )),
+                ...CategoriaNota.values.map(
+                  (c) => _CategoriaChip(
+                    label: c.label,
+                    icon: c.icon,
+                    selezionata: filtro == c,
+                    onTap: () =>
+                        ref.read(filtroCategoriaProvider.notifier).state = c,
+                  ),
+                ),
               ],
             ),
           ),
@@ -48,7 +52,11 @@ class NotePage extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.note_add_outlined, size: 64, color: theme.colorScheme.outline),
+                        Icon(
+                          Icons.note_add_outlined,
+                          size: 64,
+                          color: theme.colorScheme.outline,
+                        ),
                         const SizedBox(height: 12),
                         const Text('Nessuna nota'),
                       ],
@@ -56,25 +64,34 @@ class NotePage extends ConsumerWidget {
                   );
                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _getCrossAxisCount(context),
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemCount: note.length,
-                  itemBuilder: (context, index) {
-                    final nota = note[index];
-                    return NotaCard(
-                      nota: nota,
-                      onTap: () => _showEditDialog(context, ref, nota),
-                      onDelete: () => _confirmDelete(context, ref, nota),
-                      onTogglePin: () =>
-                          ref.read(noteProvider.notifier).togglePin(nota.id),
-                    );
+                // Sostituisci la GridView.builder con questo codice:
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await ref.read(noteProvider.notifier).refreshNote();
                   },
+                  child: GridView.builder(
+                    physics:
+                        const AlwaysScrollableScrollPhysics(), // Importante per far funzionare il refresh anche quando ci sono poche note
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: _getCrossAxisCount(context),
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.85,
+                    ),
+                    itemCount: note.length,
+                    itemBuilder: (context, index) {
+                      final nota = note[index];
+                      return NotaCard(
+                        nota: nota,
+                        onTap: () => _showEditDialog(context, ref, nota),
+                        onDelete: () => _confirmDelete(context, ref, nota),
+                        onTogglePin: () =>
+                            ref.read(noteProvider.notifier).togglePin(nota.id),
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -96,11 +113,17 @@ class NotePage extends ConsumerWidget {
   }
 
   void _showAddDialog(BuildContext context, WidgetRef ref) {
-    showDialog(context: context, builder: (context) => _NotaDialog(ref: ref));
+    showDialog(
+      context: context,
+      builder: (context) => _NotaDialog(ref: ref),
+    );
   }
 
   void _showEditDialog(BuildContext context, WidgetRef ref, Nota nota) {
-    showDialog(context: context, builder: (context) => _NotaDialog(ref: ref, nota: nota));
+    showDialog(
+      context: context,
+      builder: (context) => _NotaDialog(ref: ref, nota: nota),
+    );
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, Nota nota) {
@@ -119,7 +142,10 @@ class NotePage extends ConsumerWidget {
               ref.read(noteProvider.notifier).deleteNota(nota.id);
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Elimina'),
           ),
         ],
@@ -203,7 +229,9 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
             children: [
               Text(
                 isEditing ? 'Modifica nota' : 'Nuova nota',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
 
@@ -214,13 +242,18 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
                 autofocus: true,
                 decoration: InputDecoration(
                   hintText: 'Scrivi qui...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
 
               // Categoria
-              const Text('Categoria', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                'Categoria',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -237,7 +270,10 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
               const SizedBox(height: 16),
 
               // Colore
-              const Text('Colore', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                'Colore',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 10,
@@ -254,11 +290,15 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
                         color: c,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: selezionato ? Colors.black87 : Colors.transparent,
+                          color: selezionato
+                              ? Colors.black87
+                              : Colors.transparent,
                           width: 2,
                         ),
                       ),
-                      child: selezionato ? const Icon(Icons.check, size: 18) : null,
+                      child: selezionato
+                          ? const Icon(Icons.check, size: 18)
+                          : null,
                     ),
                   );
                 }).toList(),
