@@ -203,3 +203,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Flutter team for the amazing framework
 - Riverpod for powerful state management
 - The Flutter community for inspiration and packages
+
+
+ export CHROME_EXECUTABLE=/run/current-system/sw/bin/google-chrome-stable
+

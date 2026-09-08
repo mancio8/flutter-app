@@ -23,6 +23,7 @@ import '../../features/raccolta/presentation/pages/raccolta_page.dart';
 import '../../features/biblioteca/presentation/pages/biblioteca_page.dart';
 import '../../features/note/presentation/pages/note_page.dart';
 import '../../features/habits/presentation/pages/habits_page.dart';
+import '../../features/veicoli/presentation/pages/veicoli_page.dart';
 import '../../features/allenamenti/presentation/pages/allenamenti_page.dart';
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
@@ -157,6 +158,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/allenamenti',
             builder: (context, state) => const AllenamentiPage(),
+          ),
+          GoRoute(
+            path: '/veicoli',
+            builder: (context, state) => const VeicoliPage(),
           ),
         ],
       ),

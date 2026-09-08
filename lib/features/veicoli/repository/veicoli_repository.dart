@@ -1,27 +1,64 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/models/veicolo.dart';
 
 class VeicoliRepository {
-  // Lista di veicoli di esempio
-  final List<Veicolo> _veicoli = [
-    Veicolo(id: 'auto-001', nome: 'Fiat Grande Punto', targa: 'DR594WM', tipo: 'Auto'),
-    Veicolo(id: 'auto-002', nome: 'Suzuki Vitara', targa: 'BJ918GX', tipo: 'Auto'),
-  ];
+  final SupabaseClient _supabase;
+  
+  VeicoliRepository(this._supabase);
 
+  // Ottiene tutti i veicoli dell'utente corrente
   Future<List<Veicolo>> getVeicoli() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(_veicoli);
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    final response = await _supabase
+        .from('veicoli')
+        .select()
+        .eq('user_id', userId)
+        .order('nome');
+
+    return response
+        .map<Veicolo>((json) => Veicolo.fromJson(json))
+        .toList();
   }
 
+  // Aggiunge un nuovo veicolo
   Future<void> addVeicolo(Veicolo veicolo) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    _veicoli.add(veicolo);
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    final data = veicolo.toJson()
+      ..['user_id'] = userId
+      ..remove('id'); // Lascia che Supabase generi l'UUID
+
+    await _supabase.from('veicoli').insert(data);
   }
 
-  Future<Veicolo?> getVeicoloById(String id) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    for (var veicolo in _veicoli) {
-      if (veicolo.id == id) return veicolo;
-    }
-    return null;
+  // Aggiorna un veicolo esistente
+  Future<void> updateVeicolo(Veicolo veicolo) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    final data = veicolo.toJson()
+      ..['user_id'] = userId
+      ..remove('id'); // Non aggiorniamo l'ID
+
+    await _supabase
+        .from('veicoli')
+        .update(data)
+        .eq('id', veicolo.id)
+        .eq('user_id', userId); // Sicurezza extra
+  }
+
+  // Elimina un veicolo
+  Future<void> deleteVeicolo(String id) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    await _supabase
+        .from('veicoli')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId); // Sicurezza extra
   }
 }

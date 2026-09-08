@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/rifornimento.dart';
 import '../../../../core/models/veicolo.dart';
+import '../../../../core/widgets/refreshable_widgets.dart';
 import '../../providers/rifornimenti_provider.dart';
-import '../../services/rifornimenti_export_service.dart'; // NUOVO IMPORT
+import '../../services/rifornimenti_export_service.dart';
 import '../widgets/rifornimento_card.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 
-// La pagina principale per i rifornimenti
 class RifornimentiPage extends ConsumerWidget {
   const RifornimentiPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Osserva il provider per ottenere i dati
     final rifornimentiAsync = ref.watch(rifornimentiProvider);
     final veicoliAsync = ref.watch(veicoliProvider);
     final veicoloSelezionato = ref.watch(veicoloSelezionatoProvider);
@@ -24,7 +23,6 @@ class RifornimentiPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Rifornimenti'),
         actions: [
-          // NUOVO: Pulsante per importare da JSON
           IconButton(
             icon: const Icon(Icons.upload_file),
             onPressed: () => _importJson(context, ref),
@@ -39,7 +37,6 @@ class RifornimentiPage extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Selettore veicolo
           _VeicoloSelector(
             veicoliAsync: veicoliAsync,
             veicoloSelezionato: veicoloSelezionato,
@@ -47,8 +44,6 @@ class RifornimentiPage extends ConsumerWidget {
               ref.read(veicoloSelezionatoProvider.notifier).state = veicoloId;
             },
           ),
-
-          // Barra delle statistiche
           Container(
             padding: const EdgeInsets.all(16),
             color: Theme.of(context).colorScheme.surfaceVariant,
@@ -70,23 +65,25 @@ class RifornimentiPage extends ConsumerWidget {
               ],
             ),
           ),
-
-          // Lista dei rifornimenti
           Expanded(
             child: rifornimentiAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-
-              error: (error, stackTrace) =>
-                  Center(child: Text('Errore: $error')),
-
+              error: (error, stackTrace) => RefreshableError(
+                message: 'Errore: $error',
+                onRetry: () => ref.refresh(rifornimentiProvider.future),
+              ),
               data: (rifornimenti) {
                 if (rifornimenti.isEmpty) {
-                  return const Center(
-                    child: Text('Nessun rifornimento registrato'),
+                  return RefreshableEmptyState(
+                    onRefresh: () => ref.refresh(rifornimentiProvider.future),
+                    icon: Icons.local_gas_station_outlined,
+                    title: 'Nessun rifornimento registrato',
+                    subtitle: 'Aggiungi il tuo primo rifornimento\nScorri verso il basso per aggiornare',
                   );
                 }
 
-                return ListView.builder(
+                return RefreshableList(
+                  onRefresh: () => ref.refresh(rifornimentiProvider.future),
                   padding: const EdgeInsets.all(16),
                   itemCount: rifornimenti.length,
                   itemBuilder: (context, index) {
@@ -116,7 +113,6 @@ class RifornimentiPage extends ConsumerWidget {
     );
   }
 
-  // NUOVO: Metodo per esportare in JSON
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
     final rifornimenti = ref.read(rifornimentiProvider).value ?? [];
 
@@ -151,7 +147,6 @@ class RifornimentiPage extends ConsumerWidget {
     }
   }
 
-  // NUOVO: Metodo per importare da JSON
   Future<void> _importJson(BuildContext context, WidgetRef ref) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -235,7 +230,6 @@ class RifornimentiPage extends ConsumerWidget {
   }
 }
 
-// Widget per selezionare il veicolo
 class _VeicoloSelector extends StatelessWidget {
   final AsyncValue<List<Veicolo>> veicoliAsync;
   final String? veicoloSelezionato;
@@ -276,7 +270,6 @@ class _VeicoloSelector extends StatelessWidget {
   }
 }
 
-// Widget per le statistiche
 class _StatItem extends StatelessWidget {
   final String label;
   final String value;
@@ -295,7 +288,6 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-// Dialog per aggiungere o modificare un rifornimento
 class _AddRifornimentoDialog extends ConsumerStatefulWidget {
   final WidgetRef ref;
   final Rifornimento? rifornimento;
@@ -366,7 +358,6 @@ class _AddRifornimentoDialogState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Selezione veicolo
               veicoliAsync.when(
                 loading: () => const CircularProgressIndicator(),
                 error: (e, _) => Text('Errore: $e'),
@@ -392,10 +383,7 @@ class _AddRifornimentoDialogState
                   );
                 },
               ),
-
               const SizedBox(height: 16),
-
-              // Campo litri
               TextFormField(
                 controller: _litriController,
                 decoration: const InputDecoration(
@@ -414,8 +402,6 @@ class _AddRifornimentoDialogState
                 },
               ),
               const SizedBox(height: 16),
-
-              // Campo costo
               TextFormField(
                 controller: _costoController,
                 decoration: const InputDecoration(
@@ -434,8 +420,6 @@ class _AddRifornimentoDialogState
                 },
               ),
               const SizedBox(height: 16),
-
-              // Campo chilometraggio
               TextFormField(
                 controller: _chilometraggioController,
                 decoration: const InputDecoration(
@@ -446,8 +430,6 @@ class _AddRifornimentoDialogState
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
-
-              // Dropdown tipo carburante
               DropdownButtonFormField<String>(
                 value: _tipoCarburante,
                 decoration: const InputDecoration(labelText: 'Tipo Carburante'),
@@ -464,8 +446,6 @@ class _AddRifornimentoDialogState
                 },
               ),
               const SizedBox(height: 16),
-
-              // Campo note
               TextFormField(
                 controller: _noteController,
                 decoration: const InputDecoration(

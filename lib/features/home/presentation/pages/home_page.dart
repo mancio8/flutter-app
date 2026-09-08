@@ -30,7 +30,10 @@ class HomePage extends StatelessWidget {
                       Icons.rocket_launch,
                       size: 72,
                       color: theme.colorScheme.primary,
-                    ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+                    ).animate().scale(
+                      duration: 600.ms,
+                      curve: Curves.easeOutBack,
+                    ),
                     const SizedBox(height: 20),
                     Text(
                       l10n.welcomeTitle,
@@ -109,6 +112,12 @@ class HomePage extends StatelessWidget {
                     color: Colors.deepPurple,
                     onTap: () => context.go('/allenamenti'),
                   ),
+                  _AppTile(
+                    icon: Icons.directions_car,
+                    label: 'I Miei Veicoli',
+                    color: const Color.fromARGB(255, 58, 183, 89),
+                    onTap: () => context.go('/veicoli'),
+                  ),                  
                 ],
               ).animate().fadeIn(delay: 300.ms),
 
@@ -242,14 +251,10 @@ class _DemoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ActionChip(
-      label: Text(label),
-      onPressed: onTap,
-    );
+    return ActionChip(label: Text(label), onPressed: onTap);
   }
 }
 
 // ============================================================================
 // FEATURE ITEM
 // ============================================================================
-

@@ -3,15 +3,17 @@ import '../../../core/models/rifornimento.dart';
 import '../../../core/models/veicolo.dart';
 import '../repository/rifornimenti_repository.dart';
 import '../../veicoli/repository/veicoli_repository.dart';
+import '../../../core/providers/supabase_provider.dart';
 
-// Provider per il repository dei rifornimenti
 final rifornimentiRepositoryProvider = Provider<RifornimentiRepository>((ref) {
-  return RifornimentiRepository();
+  final supabase = ref.watch(supabaseProvider);
+  return RifornimentiRepository(supabase);
 });
 
 // Provider per il repository dei veicoli
 final veicoliRepositoryProvider = Provider<VeicoliRepository>((ref) {
-  return VeicoliRepository();
+  final supabase = ref.watch(supabaseProvider);
+  return VeicoliRepository(supabase);
 });
 
 // Provider per la lista dei veicoli

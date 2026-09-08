@@ -1,119 +1,124 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/models/rifornimento.dart';
+import 'dart:convert';
 
 class RifornimentiRepository {
-  // Chiave per salvare i dati in SharedPreferences
-  static const String _storageKey = 'rifornimenti_list';
+  final SupabaseClient _supabase;
+  
+  RifornimentiRepository(this._supabase);
 
-  // Lista in memoria (cache)
-  List<Rifornimento> _rifornimenti = [];
-
-  // Carica i dati da SharedPreferences
-  Future<void> _loadFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? jsonString = prefs.getString(_storageKey);
-
-    if (jsonString != null) {
-      final List<dynamic> jsonList = json.decode(jsonString);
-      _rifornimenti = jsonList
-          .map((json) => Rifornimento.fromJson(json as Map<String, dynamic>))
-          .toList();
-    }
-  }
-
-  // Salva i dati su SharedPreferences
-  Future<void> _saveToStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String jsonString = json.encode(
-      _rifornimenti.map((r) => r.toJson()).toList(),
-    );
-    await prefs.setString(_storageKey, jsonString);
-  }
-
-  // Ottiene tutti i rifornimenti
+  // Ottiene tutti i rifornimenti dell'utente corrente
   Future<List<Rifornimento>> getRifornimenti() async {
-    // Carica dal storage se la lista è vuota
-    if (_rifornimenti.isEmpty) {
-      await _loadFromStorage();
-    }
-    return List.unmodifiable(_rifornimenti);
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    final response = await _supabase
+        .from('rifornimenti')
+        .select()
+        .eq('user_id', userId)
+        .order('data', ascending: false);
+
+    return response
+        .map<Rifornimento>((json) => Rifornimento.fromJson(json))
+        .toList();
   }
 
   // Ottiene rifornimenti per un veicolo specifico
   Future<List<Rifornimento>> getRifornimentiPerVeicolo(String veicoloId) async {
-    final all = await getRifornimenti();
-    return all.where((r) => r.veicoloId == veicoloId).toList();
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    final response = await _supabase
+        .from('rifornimenti')
+        .select()
+        .eq('user_id', userId)
+        .eq('veicolo_id', veicoloId)
+        .order('data', ascending: false);
+
+    return response
+        .map<Rifornimento>((json) => Rifornimento.fromJson(json))
+        .toList();
   }
 
   // Aggiunge un nuovo rifornimento
   Future<void> addRifornimento(Rifornimento rifornimento) async {
-    if (_rifornimenti.isEmpty) {
-      await _loadFromStorage();
-    }
-    _rifornimenti.add(rifornimento);
-    await _saveToStorage(); // Salva subito!
-  }
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
 
-  // Elimina un rifornimento
-  Future<void> deleteRifornimento(String id) async {
-    if (_rifornimenti.isEmpty) {
-      await _loadFromStorage();
-    }
-    _rifornimenti.removeWhere((r) => r.id == id);
-    await _saveToStorage(); // Salva subito!
+    final data = rifornimento.toJson()
+      ..['user_id'] = userId
+      ..remove('id'); // Lascia che Supabase generi l'UUID
+
+    await _supabase.from('rifornimenti').insert(data);
   }
 
   // Aggiorna un rifornimento esistente
   Future<void> updateRifornimento(Rifornimento rifornimento) async {
-    if (_rifornimenti.isEmpty) {
-      await _loadFromStorage();
-    }
-    final index = _rifornimenti.indexWhere((r) => r.id == rifornimento.id);
-    if (index != -1) {
-      _rifornimenti[index] = rifornimento;
-      await _saveToStorage();
-    }
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    final data = rifornimento.toJson()
+      ..['user_id'] = userId
+      ..remove('id'); // Non aggiorniamo l'ID
+
+    await _supabase
+        .from('rifornimenti')
+        .update(data)
+        .eq('id', rifornimento.id)
+        .eq('user_id', userId); // Sicurezza extra
   }
 
-  // Elimina tutti i rifornimenti
+  // Elimina un rifornimento
+  Future<void> deleteRifornimento(String id) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    await _supabase
+        .from('rifornimenti')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId); // Sicurezza extra
+  }
+
+  // Elimina tutti i rifornimenti dell'utente
   Future<void> clearAll() async {
-    _rifornimenti.clear();
-    await _saveToStorage();
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    await _supabase
+        .from('rifornimenti')
+        .delete()
+        .eq('user_id', userId);
   }
 
-  // Importa da JSON (unisce o sostituisce la lista esistente)
+  // Importa rifornimenti da JSON
   Future<int> importFromJson(String jsonString, {bool merge = true}) async {
-    if (_rifornimenti.isEmpty) {
-      await _loadFromStorage();
-    }
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
 
     final List<dynamic> jsonList = json.decode(jsonString);
-    final List<Rifornimento> importati = [];
+    final List<Map<String, dynamic>> rifornimentiDaImportare = [];
+
     for (var i = 0; i < jsonList.length; i++) {
       final map = jsonList[i] as Map<String, dynamic>;
-      var rifornimento = Rifornimento.fromJson(map);
-      if (map['id'] == null || (map['id'] as String).isEmpty) {
-        rifornimento = rifornimento.copyWith(
-          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
-        );
-      }
-      importati.add(rifornimento);
+      final rifornimento = Rifornimento.fromJson(map);
+      
+      final data = rifornimento.toJson()
+        ..['user_id'] = userId
+        ..remove('id');
+
+      rifornimentiDaImportare.add(data);
     }
 
-    if (merge) {
-      final idEsistenti = _rifornimenti.map((r) => r.id).toSet();
-      final nuovi = importati
-          .where((r) => !idEsistenti.contains(r.id))
-          .toList();
-
-      _rifornimenti.addAll(nuovi);
-      await _saveToStorage();
-      return nuovi.length;
-    } else {
-      _rifornimenti = importati;
-      await _saveToStorage();
-      return _rifornimenti.length;
+    if (!merge) {
+      // Se non vogliamo unire, prima eliminiamo tutti i rifornimenti esistenti
+      await clearAll();
     }
+
+    if (rifornimentiDaImportare.isNotEmpty) {
+      await _supabase.from('rifornimenti').insert(rifornimentiDaImportare);
+    }
+
+    return rifornimentiDaImportare.length;
   }
 }
