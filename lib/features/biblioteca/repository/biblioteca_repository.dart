@@ -1,240 +1,368 @@
+// File: lib/features/biblioteca/data/repository/biblioteca_repository.dart
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/models/libro.dart';
+import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/models/libro.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class BibliotecaRepository {
-  static const String _storageKey = 'biblioteca_libri';
-  List<Libro> _libri = [];
+  final SupabaseClient _supabase;
 
-  // Dati iniziali (il tuo JSON)
-  static const String _datiIniziali = '''
-[
-    {
-        "title": "Bea wolf",
-        "author": "Zach Weinersmith",
-        "read_date": "2026-01-21",
-        "cover": "https://books.google.com/books/content?id=RfWrEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "Cronache di spogliatoio",
-        "author": "Giulio Incagli",
-        "read_date": "2025-03-14",
-        "cover": "https://books.google.com/books/content?id=SkEgEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "Dimentica il mio nome",
-        "author": "Zerocalcare",
-        "read_date": "2025-01-01",
-        "cover": "https://books.google.com/books/content?id=wwOmBgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "Dodici",
-        "author": "Zerocalcare",
-        "read_date": "2025-01-02",
-        "cover": "https://books.google.it/books/publisher/content?id=rQimBgAAQBAJ&printsec=frontcover&img=1&zoom=5&edge=curl&imgtk=AFLRE73GcUs2bw7mD0_NuaqFC5fvMgifqku0XZTVUP4LRB9Vdlwn6ui1KKDd_K1oKgEQcghazmUHL40DWgp7tnMD0twwDTKwrKeShExb5pmSRBHSSfm2sm2UJ-Y-4eo_ljSLhNybXJzI"
-    },
-    {
-        "title": "Ducks",
-        "author": "Kate Beaton",
-        "read_date": "2025-05-30",
-        "cover": "https://books.google.com/books/content?id=j4GEEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "I Riti di Guardia tra cronaca e storia: Domande e Risposte",
-        "author": "Vincenzo Di Crosta",
-        "read_date": "2025-01-01",
-        "cover": "https://m.media-amazon.com/images/I/71R62Oy7iHL._SL1500_.jpg"
-    },
-    {
-        "title": "Kobane Calling",
-        "author": "Zerocalcare",
-        "read_date": "2025-01-07",
-        "cover": "https://books.google.com/books/content?id=b4DDCwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "L'elenco telefonico degli accolli",
-        "author": "Zerocalcare",
-        "read_date": "2025-01-01",
-        "cover": "https://books.google.com/books/content?id=c0Z_CgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "La profezia dell'armadillo",
-        "author": "Zerocalcare",
-        "read_date": "2025-01-01",
-        "cover": "https://books.google.com/books/content?id=XD12DgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "La terra dei figli",
-        "author": "Gipi",
-        "read_date": "2025-01-08",
-        "cover": "https://books.google.com/books/content?id=XR6L0AEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api"
-    },
-    {
-        "title": "Le guerre di Lucas",
-        "author": "Laurent Hopman",
-        "read_date": "2025-06-14",
-        "cover": "https://books.google.com/books/content?id=F1gFEQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "Macerie Prime",
-        "author": "Zerocalcare",
-        "read_date": "2025-01-08",
-        "cover": "https://books.google.it/books/publisher/content?id=69o9DwAAQBAJ&hl=it&pg=PP1&img=1&zoom=3&sig=ACfU3U22mQO-4_t9RIvAobJVfz1l4OsD4A&w=128"
-    },
-    {
-        "title": "Macerie Prime - Sei mesi dopo",
-        "author": "Zerocalcare",
-        "read_date": "2025-01-08",
-        "cover": "https://books.google.com/books/content?id=Yx3GtgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api"
-    },
-    {
-        "title": "Quando muori resta a me",
-        "author": "Zerocalcare",
-        "read_date": "2025-05-27",
-        "cover": "https://books.google.com/books/content?id=zn-y0AEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api"
-    },
-    {
-        "title": "Sulla strada giusta",
-        "author": "Francesco Grandis",
-        "read_date": "2025-01-08",
-        "cover": "https://books.google.com/books/content?id=H29YDgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "Troppo facile amarti in vacanza",
-        "author": "Giacomo Keison Bevilacqua",
-        "read_date": "2025-01-08",
-        "cover": "https://books.google.com/books/content?id=X4wtEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "Un non so che d'alato: Storie e visioni dal Tour de France 2024",
-        "author": "Bidon Ciclismo allo stato liquido",
-        "read_date": "2025-03-18",
-        "cover": "https://m.media-amazon.com/images/I/61HbnhrzflL._SL1500_.jpg"
-    },
-    {
-        "title": "Un polpo alla gola",
-        "author": "Zerocalcare",
-        "read_date": "2025-01-08",
-        "cover": "https://books.google.com/books/content?id=JVKxBgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    },
-    {
-        "title": "Pigiama computer biscotti",
-        "author": "Alberto Madrigal",
-        "read_date": "2026-01-24",
-        "cover": "https://books.google.com/books/content?id=FjuWDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-    }
-]
-''';
+  BibliotecaRepository(this._supabase);
 
-  // Carica dal storage o inizializza con dati predefiniti
-  Future<void> _loadFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? jsonString = prefs.getString(_storageKey);
+  // Ottiene tutti i libri letti
+  Future<List<Libro>> getLibriLetti() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return [];
 
-    if (jsonString != null) {
-      final List<dynamic> jsonList = json.decode(jsonString);
-      _libri = jsonList
-          .map((json) => Libro.fromJson(json as Map<String, dynamic>))
-          .toList();
+    final response = await _supabase
+        .from('biblioteca_libri')
+        .select()
+        .eq('user_id', userId)
+        .not('read_date', 'is', null) // Questo è corretto
+        .order('read_date', ascending: false);
+
+    return response.map<Libro>((json) => Libro.fromJson(json)).toList();
+  }
+
+  // Ottiene la wishlist
+  // Ottiene la wishlist
+  Future<List<Libro>> getWishlist() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    final response = await _supabase
+        .from('biblioteca_libri')
+        .select()
+        .eq('user_id', userId)
+        .eq('in_wishlist', true)
+        .filter(
+          'read_date',
+          'is',
+          null,
+        ) // FIX: "is" è riservato, si usa filter()
+        .order('wishlist_date', ascending: false);
+
+    return response.map<Libro>((json) => Libro.fromJson(json)).toList();
+  }
+
+  // Aggiunge un libro alla wishlist
+  Future<void> addToWishlist(Libro libro) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    final existing = await _supabase
+        .from('biblioteca_libri')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('title', libro.titolo)
+        .eq('author', libro.autore)
+        .maybeSingle();
+
+    if (existing != null) {
+      await _supabase
+          .from('biblioteca_libri')
+          .update({
+            'in_wishlist': true,
+            'wishlist_date': DateTime.now().toIso8601String(),
+          })
+          .eq('id', existing['id']);
     } else {
-      // Prima volta: carica i dati iniziali
-      final List<dynamic> jsonList = json.decode(_datiIniziali);
-      _libri = jsonList
-          .map((json) => Libro.fromJson(json as Map<String, dynamic>))
-          .toList();
-      await _saveToStorage();
+      final data = {
+        'title': libro.titolo,
+        'author': libro.autore,
+        'cover_url': libro.copertinaUrl ?? '',
+        'genre': libro.genere,
+        'description': libro.descrizione,
+        'in_wishlist': true,
+        'wishlist_date': DateTime.now().toIso8601String(),
+        'user_id': userId,
+      };
+
+      await _supabase.from('biblioteca_libri').insert(data);
     }
   }
 
-  Future<void> _saveToStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String jsonString = json.encode(
-      _libri.map((l) => l.toJson()).toList(),
-    );
-    await prefs.setString(_storageKey, jsonString);
+  // Sposta un libro dalla wishlist ai libri letti
+  Future<void> moveToRead(Libro libro, DateTime dataLettura) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    await _supabase
+        .from('biblioteca_libri')
+        .update({
+          'read_date': dataLettura.toIso8601String().split('T')[0],
+          'in_wishlist': false,
+          'wishlist_date': null,
+        })
+        .eq('id', libro.id)
+        .eq('user_id', userId);
   }
 
-  Future<List<Libro>> getLibri() async {
-    if (_libri.isEmpty) {
-      await _loadFromStorage();
+  // Rimuove un libro dalla wishlist
+  Future<void> removeFromWishlist(String id) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    final existing = await _supabase
+        .from('biblioteca_libri')
+        .select('read_date')
+        .eq('id', id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (existing != null && existing['read_date'] == null) {
+      await _supabase
+          .from('biblioteca_libri')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId);
+    } else {
+      await _supabase
+          .from('biblioteca_libri')
+          .update({'in_wishlist': false, 'wishlist_date': null})
+          .eq('id', id)
+          .eq('user_id', userId);
     }
-    return List.unmodifiable(_libri);
   }
 
+  // Cerca libri su Google Books API
+  Future<List<Libro>> searchBooksOnline(String query) async {
+    final googleBooksApiKey = dotenv.env['GOOGLE_BOOKS_API_KEY'];
+
+    try {
+      final url = Uri.https('www.googleapis.com', '/books/v1/volumes', {
+        'q': query,
+        'maxResults': '20',
+        'key': googleBooksApiKey,
+      });
+
+      final response = await http.get(
+        url,
+        headers: {'Accept': 'application/json'},
+      );
+
+      if (response.statusCode != 200) {
+        print('Errore Google Books: ${response.statusCode}');
+        return [];
+      }
+
+      final data = jsonDecode(response.body);
+      final items = data['items'];
+
+      if (items == null || items is! List) {
+        print('Nessun items nella risposta');
+        return [];
+      }
+
+      return items.map<Libro>((item) {
+        final info = Map<String, dynamic>.from(item['volumeInfo'] ?? {});
+
+        final categories = info['categories'];
+
+        // Google Books a volte restituisce http://
+        String? copertinaUrl = info['imageLinks']?['thumbnail']?.toString();
+
+        if (copertinaUrl != null) {
+          copertinaUrl = copertinaUrl.replaceFirst('http://', 'https://');
+        }
+
+        return Libro(
+          id:
+              item['id']?.toString() ??
+              DateTime.now().millisecondsSinceEpoch.toString(),
+
+          titolo: info['title']?.toString() ?? 'Titolo sconosciuto',
+
+          autore: info['authors'] is List
+              ? (info['authors'] as List).join(', ')
+              : 'Autore sconosciuto',
+
+          copertinaUrl: copertinaUrl,
+
+          genere: categories is List && categories.isNotEmpty
+              ? categories.first.toString()
+              : null,
+
+          descrizione: info['description']?.toString(),
+        );
+      }).toList();
+    } catch (e, stackTrace) {
+      print('ERRORE searchBooksOnline: $e');
+      print(stackTrace);
+      return [];
+    }
+  }
+
+  // Aggiunge un libro letto
   Future<void> addLibro(Libro libro) async {
-    if (_libri.isEmpty) {
-      await _loadFromStorage();
-    }
-    _libri.add(libro);
-    await _saveToStorage();
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    final data = {
+      'title': libro.titolo,
+      'author': libro.autore,
+      'read_date': libro.dataLettura?.toIso8601String().split('T')[0],
+      'cover_url': libro.copertinaUrl ?? '',
+      'genre': libro.genere,
+      'description': libro.descrizione,
+      'user_id': userId,
+    };
+
+    await _supabase.from('biblioteca_libri').insert(data);
   }
 
+  // Aggiorna un libro
   Future<void> updateLibro(Libro libro) async {
-    if (_libri.isEmpty) {
-      await _loadFromStorage();
-    }
-    final index = _libri.indexWhere((l) => l.id == libro.id);
-    if (index != -1) {
-      _libri[index] = libro;
-      await _saveToStorage();
-    }
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    final data = {
+      'title': libro.titolo,
+      'author': libro.autore,
+      'read_date': libro.dataLettura?.toIso8601String().split('T')[0],
+      'cover_url': libro.copertinaUrl ?? '',
+      'genre': libro.genere,
+      'description': libro.descrizione,
+      'rating': libro.valutazione,
+      'review': libro.recensione,
+      'user_id': userId,
+    };
+
+    await _supabase
+        .from('biblioteca_libri')
+        .update(data)
+        .eq('id', libro.id)
+        .eq('user_id', userId);
   }
 
+  // Elimina un libro
   Future<void> deleteLibro(String id) async {
-    if (_libri.isEmpty) {
-      await _loadFromStorage();
-    }
-    _libri.removeWhere((l) => l.id == id);
-    await _saveToStorage();
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
+
+    await _supabase
+        .from('biblioteca_libri')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
   }
 
   // Esporta in JSON
   Future<String> exportToJson() async {
-    if (_libri.isEmpty) {
-      await _loadFromStorage();
-    }
-    return JsonEncoder.withIndent(
-      '  ',
-    ).convert(_libri.map((l) => l.toJson()).toList());
+    final libri = await getLibriLetti();
+
+    final jsonList = libri
+        .map(
+          (l) => {
+            'title': l.titolo,
+            'author': l.autore,
+            'read_date': l.dataLettura?.toIso8601String().split('T')[0],
+            'cover_url': l.copertinaUrl ?? '',
+          },
+        )
+        .toList();
+
+    return JsonEncoder.withIndent('  ').convert(jsonList);
   }
 
-  // Importa da JSON (unisce o sostituisce la libreria esistente)
+  // Importa da JSON con gestione migliorata
   Future<int> importFromJson(String jsonString, {bool merge = true}) async {
-    if (_libri.isEmpty) {
-      await _loadFromStorage();
-    }
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Utente non autenticato');
 
-    final List<dynamic> jsonList = json.decode(jsonString);
-    final List<Libro> importati = [];
-    for (var i = 0; i < jsonList.length; i++) {
-      final map = jsonList[i] as Map<String, dynamic>;
-      var libro = Libro.fromJson(map);
-      // Garantisce id univoci se mancanti nel JSON importato
-      if (map['id'] == null) {
-        libro = libro.copyWith(
-          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
+    try {
+      final List<dynamic> jsonList = json.decode(jsonString);
+
+      if (jsonList.isEmpty) return 0;
+
+      print('Inizio importazione: ${jsonList.length} libri, merge: $merge');
+
+      final List<Map<String, dynamic>> libriDaImportare = [];
+      final Set<String> chiaviEsistenti = {};
+
+      if (merge) {
+        final existingLibri = await getLibriLetti();
+        chiaviEsistenti.addAll(
+          existingLibri.map(
+            (l) =>
+                '${l.titolo.toLowerCase().trim()}|${l.autore.toLowerCase().trim()}',
+          ),
         );
       }
-      importati.add(libro);
-    }
 
-    if (merge) {
-      final chiaviEsistenti = _libri
-          .map((l) => '${l.titolo.toLowerCase()}|${l.autore.toLowerCase()}')
-          .toSet();
+      for (var i = 0; i < jsonList.length; i++) {
+        try {
+          final map = jsonList[i] as Map<String, dynamic>;
 
-      final nuovi = importati.where((l) {
-        final chiave = '${l.titolo.toLowerCase()}|${l.autore.toLowerCase()}';
-        return !chiaviEsistenti.contains(chiave);
-      }).toList();
+          final titolo = (map['title'] ?? map['titolo'] ?? '')
+              .toString()
+              .trim();
+          final autore = (map['author'] ?? map['autore'] ?? '')
+              .toString()
+              .trim();
+          final dataLettura = map['read_date'] != null
+              ? DateTime.parse(map['read_date'])
+              : null;
+          final coverUrl =
+              map['cover_url'] ?? map['cover'] ?? map['copertinaUrl'] ?? '';
 
-      _libri.addAll(nuovi);
-      await _saveToStorage();
-      return nuovi.length;
-    } else {
-      _libri = importati;
-      await _saveToStorage();
-      return _libri.length;
+          if (titolo.isEmpty || autore.isEmpty) continue;
+
+          final chiave = '$titolo|$autore'.toLowerCase();
+
+          if (merge && chiaviEsistenti.contains(chiave)) {
+            print('Duplicato saltato: $titolo');
+            continue;
+          }
+
+          final data = {
+            'title': titolo,
+            'author': autore,
+            'read_date': dataLettura?.toIso8601String().split('T')[0],
+            'cover_url': coverUrl.toString(),
+            'user_id': userId,
+          };
+
+          libriDaImportare.add(data);
+
+          if (merge) {
+            chiaviEsistenti.add(chiave);
+          }
+        } catch (e) {
+          print('Errore nel parsing del libro $i: $e');
+        }
+      }
+
+      print('Libri da importare: ${libriDaImportare.length}');
+
+      if (!merge) {
+        print('Eliminazione libri esistenti...');
+        await _supabase.from('biblioteca_libri').delete().eq('user_id', userId);
+      }
+
+      int importati = 0;
+      const batchSize = 500;
+
+      for (var i = 0; i < libriDaImportare.length; i += batchSize) {
+        final batch = libriDaImportare.sublist(
+          i,
+          i + batchSize > libriDaImportare.length
+              ? libriDaImportare.length
+              : i + batchSize,
+        );
+
+        if (batch.isNotEmpty) {
+          await _supabase.from('biblioteca_libri').insert(batch);
+          importati += batch.length;
+        }
+      }
+
+      print('Importazione completata: $importati libri');
+      return importati;
+    } catch (e) {
+      print('Errore durante l\'importazione: $e');
+      throw Exception('Errore durante l\'importazione: $e');
     }
   }
 }

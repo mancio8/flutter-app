@@ -21,6 +21,7 @@ import '../../features/rifornimenti/presentation/pages/rifornimenti_page.dart'; 
 import '../../shared/widgets/responsive_scaffold.dart';
 import '../../features/raccolta/presentation/pages/raccolta_page.dart';
 import '../../features/biblioteca/presentation/pages/biblioteca_page.dart';
+import '../../features/biblioteca/presentation/pages/wishlist_page.dart'; // NUOVO IMPORT
 import '../../features/note/presentation/pages/note_page.dart';
 import '../../features/habits/presentation/pages/habits_page.dart';
 import '../../features/veicoli/presentation/pages/veicoli_page.dart';
@@ -162,6 +163,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/veicoli',
             builder: (context, state) => const VeicoliPage(),
+          ),
+          // Nel tuo file di routing
+          GoRoute(
+            path: '/wishlist',
+            builder: (context, state) => const WishlistPage(),
           ),
         ],
       ),

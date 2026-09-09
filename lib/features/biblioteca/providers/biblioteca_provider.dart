@@ -1,84 +1,172 @@
+// File: lib/features/biblioteca/providers/biblioteca_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/libro.dart';
 import '../repository/biblioteca_repository.dart';
+import '../../../core/providers/supabase_provider.dart';
 
-// Provider per il repository
 final bibliotecaRepositoryProvider = Provider<BibliotecaRepository>((ref) {
-  return BibliotecaRepository();
+  final supabase = ref.watch(supabaseProvider);
+  return BibliotecaRepository(supabase);
 });
 
-// Provider per l'ordinamento
 final ordinamentoProvider = StateProvider<String>((ref) {
-  return 'title'; // 'title', 'author', 'read_date'
+  return 'title';
 });
 
-// Notifier per gestire i libri
+final libriLettiProvider = FutureProvider<List<Libro>>((ref) async {
+  final repository = ref.watch(bibliotecaRepositoryProvider);
+  return repository.getLibriLetti();
+});
+
+final wishlistProvider = FutureProvider<List<Libro>>((ref) async {
+  final repository = ref.watch(bibliotecaRepositoryProvider);
+  return repository.getWishlist();
+});
+
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final searchResultsProvider = FutureProvider<List<Libro>>((ref) async {
+  final query = ref.watch(searchQueryProvider);
+  if (query.isEmpty) return [];
+  
+  final repository = ref.watch(bibliotecaRepositoryProvider);
+  return repository.searchBooksOnline(query);
+});
+
 class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
   @override
   Future<List<Libro>> build() async {
     final repository = ref.watch(bibliotecaRepositoryProvider);
-    final ordinamento = ref.watch(ordinamentoProvider);
-
-    final libri = await repository.getLibri();
-    return _ordina(libri, ordinamento);
-  }
-
-  List<Libro> _ordina(List<Libro> libri, String ordinamento) {
-    final sorted = List<Libro>.from(libri);
-    switch (ordinamento) {
-      case 'title':
-        sorted.sort((a, b) => a.titolo.compareTo(b.titolo));
-        break;
-      case 'author':
-        sorted.sort((a, b) => a.autore.compareTo(b.autore));
-        break;
-      case 'read_date':
-        sorted.sort((a, b) => b.dataLettura.compareTo(a.dataLettura));
-        break;
+    try {
+      return await repository.getLibriLetti();
+    } catch (e) {
+      print('Errore nel build: $e');
+      rethrow;
     }
-    return sorted;
   }
 
   Future<void> addLibro(Libro libro) async {
     final repository = ref.read(bibliotecaRepositoryProvider);
-    await repository.addLibro(libro);
-    await _reload();
+
+    try {
+      await repository.addLibro(libro);
+      await _reload();
+    } catch (e, stackTrace) {
+      print('Errore aggiunta libro: $e');
+      if (state.value == null) {
+        state = AsyncValue.error(e, stackTrace);
+      }
+      rethrow;
+    }
   }
 
   Future<void> updateLibro(Libro libro) async {
     final repository = ref.read(bibliotecaRepositoryProvider);
-    await repository.updateLibro(libro);
-    await _reload();
+
+    try {
+      await repository.updateLibro(libro);
+      await _reload();
+    } catch (e, stackTrace) {
+      print('Errore aggiornamento libro: $e');
+      if (state.value == null) {
+        state = AsyncValue.error(e, stackTrace);
+      }
+      rethrow;
+    }
   }
 
   Future<void> deleteLibro(String id) async {
     final repository = ref.read(bibliotecaRepositoryProvider);
-    await repository.deleteLibro(id);
-    await _reload();
+
+    try {
+      await repository.deleteLibro(id);
+      await _reload();
+    } catch (e, stackTrace) {
+      print('Errore eliminazione libro: $e');
+      if (state.value == null) {
+        state = AsyncValue.error(e, stackTrace);
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> addToWishlist(Libro libro) async {
+    final repository = ref.read(bibliotecaRepositoryProvider);
+
+    try {
+      await repository.addToWishlist(libro);
+      ref.invalidate(wishlistProvider);
+    } catch (e) {
+      print('Errore aggiunta wishlist: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> moveToRead(Libro libro, DateTime dataLettura) async {
+    final repository = ref.read(bibliotecaRepositoryProvider);
+
+    try {
+      await repository.moveToRead(libro, dataLettura);
+      await _reload();
+      ref.invalidate(wishlistProvider);
+    } catch (e) {
+      print('Errore spostamento: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeFromWishlist(String id) async {
+    final repository = ref.read(bibliotecaRepositoryProvider);
+
+    try {
+      await repository.removeFromWishlist(id);
+      ref.invalidate(wishlistProvider);
+    } catch (e) {
+      print('Errore rimozione wishlist: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Libro>> searchOnline(String query) async {
+    final repository = ref.read(bibliotecaRepositoryProvider);
+    return repository.searchBooksOnline(query);
   }
 
   Future<int> importJson(String jsonString, {bool merge = true}) async {
     final repository = ref.read(bibliotecaRepositoryProvider);
-    final count = await repository.importFromJson(jsonString, merge: merge);
-    await _reload();
-    return count;
+
+    try {
+      final count = await repository.importFromJson(jsonString, merge: merge);
+      await _reload();
+      return count;
+    } catch (e, stackTrace) {
+      print('Errore importazione: $e');
+      if (state.value == null) {
+        state = AsyncValue.error(e, stackTrace);
+      }
+      rethrow;
+    }
   }
 
   Future<void> _reload() async {
     final repository = ref.read(bibliotecaRepositoryProvider);
-    final ordinamento = ref.read(ordinamentoProvider);
-    final libri = await repository.getLibri();
-    state = AsyncValue.data(_ordina(libri, ordinamento));
+    try {
+      final libri = await repository.getLibriLetti();
+      state = AsyncValue.data(libri);
+    } catch (e, stackTrace) {
+      print('Errore reload: $e');
+      if (state.value == null) {
+        state = AsyncValue.error(e, stackTrace);
+      }
+    }
   }
 }
 
-// Provider principale
 final bibliotecaProvider =
     AsyncNotifierProvider<BibliotecaNotifier, List<Libro>>(() {
       return BibliotecaNotifier();
     });
 
-// Provider per l'export JSON
 final bibliotecaExportProvider = FutureProvider<String>((ref) async {
   final repository = ref.watch(bibliotecaRepositoryProvider);
   return repository.exportToJson();

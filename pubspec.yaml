@@ -57,6 +57,8 @@ dependencies:
   shared_preferences: ^2.3.0
   flutter_secure_storage: ^9.2.0
 
+  http: ^1.2.2
+
   # Per condividere file
   share_plus: ^7.2.0
   # Per ottenere il percorso dei file

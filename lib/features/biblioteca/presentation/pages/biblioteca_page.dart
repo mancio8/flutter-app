@@ -7,6 +7,7 @@ import '../../../../core/models/libro.dart';
 import '../../providers/biblioteca_provider.dart';
 import '../widgets/book_card.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:go_router/go_router.dart';
 
 class BibliotecaPage extends ConsumerWidget {
   const BibliotecaPage({super.key});
@@ -18,192 +19,223 @@ class BibliotecaPage extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // AppBar personalizzato
-          SliverAppBar(
-            expandedHeight: 120,
-            floating: true,
-            pinned: true,
-            backgroundColor: theme.colorScheme.primaryContainer,
-            foregroundColor: theme.colorScheme.onPrimaryContainer,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-              title: Row(
-                children: [
-                  const Icon(Icons.menu_book, size: 28),
-                  const SizedBox(width: 8),
-                  Text(
-                    'La tua biblioteca',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimaryContainer,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.refresh(bibliotecaProvider.future);
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // AppBar personalizzato
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: true,
+              pinned: true,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                title: Row(
+                  children: [
+                    const Icon(Icons.menu_book, size: 28),
+                    const SizedBox(width: 8),
+                    Text(
+                      'La tua biblioteca',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primaryContainer,
+                        theme.colorScheme.secondaryContainer,
+                      ],
                     ),
                   ),
-                ],
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primaryContainer,
-                      theme.colorScheme.secondaryContainer,
-                    ],
+                  child: Center(
+                    child: Icon(
+                      Icons.auto_stories,
+                      size: 80,
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                    ),
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.auto_stories,
-                    size: 80,
-                    color: theme.colorScheme.primary.withOpacity(0.3),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.bookmark_outline),
+                  onPressed: () =>
+                      context.push('/wishlist'), // richiede import di go_router
+                  tooltip: 'Wishlist',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.upload_file),
+                  onPressed: () => _importJson(context, ref),
+                  tooltip: 'Importa JSON',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.download),
+                  onPressed: () => _exportJson(context, ref),
+                  tooltip: 'Esporta JSON',
+                ),
+              ],
+            ),
+
+            // Barra ordinamento
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.sort,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('Ordina per:'),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: ordinamento,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        dropdownColor: theme.colorScheme.surface,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'title',
+                            child: Text('Titolo'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'author',
+                            child: Text('Autore'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'read_date',
+                            child: Text('Data lettura'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            ref.read(ordinamentoProvider.notifier).state =
+                                value;
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Contatore libri
+            SliverToBoxAdapter(
+              child: libriAsync.when(
+                loading: () => const SizedBox(),
+                error: (_, __) => const SizedBox(),
+                data: (libri) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    '${libri.length} libri nella collezione',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.upload_file),
-                onPressed: () => _importJson(context, ref),
-                tooltip: 'Importa JSON',
-              ),
-              IconButton(
-                icon: const Icon(Icons.download),
-                onPressed: () => _exportJson(context, ref),
-                tooltip: 'Esporta JSON',
-              ),
-            ],
-          ),
 
-          // Barra ordinamento
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.sort, size: 20, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  const Text('Ordina per:'),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: ordinamento,
-                      isExpanded: true,
-                      underline: const SizedBox(),
-                      dropdownColor: theme.colorScheme.surface,
-                      items: const [
-                        DropdownMenuItem(value: 'title', child: Text('Titolo')),
-                        DropdownMenuItem(
-                          value: 'author',
-                          child: Text('Autore'),
+            // Griglia libri
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: libriAsync.when(
+                loading: () => const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+
+                error: (e, _) => SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 60,
+                          color: Colors.red[300],
                         ),
-                        DropdownMenuItem(
-                          value: 'read_date',
-                          child: Text('Data lettura'),
+                        const SizedBox(height: 16),
+                        const Text('Errore nel caricamento'),
+                        const SizedBox(height: 8),
+                        Text(
+                          '$e',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            ref.invalidate(bibliotecaProvider);
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Riprova'),
                         ),
                       ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          ref.read(ordinamentoProvider.notifier).state = value;
-                        }
-                      },
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // Contatore libri
-          SliverToBoxAdapter(
-            child: libriAsync.when(
-              loading: () => const SizedBox(),
-              error: (_, __) => const SizedBox(),
-              data: (libri) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  '${libri.length} libri nella collezione',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
                 ),
-              ),
-            ),
-          ),
 
-          // Griglia libri
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: libriAsync.when(
-              loading: () => const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              ),
-
-              error: (e, _) => SliverFillRemaining(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 60,
-                        color: Colors.red[300],
+                data: (libri) {
+                  if (libri.isEmpty) {
+                    return SliverFillRemaining(
+                      child: _EmptyState(
+                        onAdd: () => _showAddDialog(context, ref),
                       ),
-                      const SizedBox(height: 16),
-                      Text('Errore nel caricamento'),
-                      const SizedBox(height: 8),
-                      Text(
-                        '$e',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              data: (libri) {
-                if (libri.isEmpty) {
-                  return SliverFillRemaining(
-                    child: _EmptyState(
-                      onAdd: () => _showAddDialog(context, ref),
-                    ),
-                  );
-                }
-
-                return SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _getCrossAxisCount(context),
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.65,
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final libro = libri[index];
-                    return BookCard(
-                      libro: libro,
-                      onEdit: () => _showEditDialog(context, ref, libro),
-                      onDelete: () => _confirmDelete(context, ref, libro),
                     );
-                  }, childCount: libri.length),
-                );
-              },
+                  }
+
+                  return SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: _getCrossAxisCount(context),
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.65,
+                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final libro = libri[index];
+                      return BookCard(
+                        libro: libro,
+                        onEdit: () => _showEditDialog(context, ref, libro),
+                        onDelete: () => _confirmDelete(context, ref, libro),
+                      );
+                    }, childCount: libri.length),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddDialog(context, ref),
@@ -221,14 +253,30 @@ class BibliotecaPage extends ConsumerWidget {
   }
 
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
-    final jsonString = await ref.read(bibliotecaExportProvider.future);
+    try {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Esportazione in corso...')));
 
-    final directory = await getApplicationDocumentsDirectory();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final file = File('${directory.path}/biblioteca_$timestamp.json');
-    await file.writeAsString(jsonString);
+      final jsonString = await ref.read(bibliotecaExportProvider.future);
 
-    await Share.shareXFiles([XFile(file.path)]);
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${directory.path}/biblioteca_$timestamp.json');
+      await file.writeAsString(jsonString);
+
+      await Share.shareXFiles([XFile(file.path)]);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Esportazione completata!')));
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Errore nell\'esportazione: $e')));
+    }
   }
 
   Future<void> _importJson(BuildContext context, WidgetRef ref) async {
@@ -270,7 +318,15 @@ class BibliotecaPage extends ConsumerWidget {
       ),
     );
 
-    if (merge == null) return;
+    if (merge == null || !context.mounted) return;
+
+    // NIENTE dialog di caricamento bloccante — usiamo uno SnackBar non invasivo
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Importazione in corso...'),
+        duration: Duration(seconds: 30),
+      ),
+    );
 
     try {
       final count = await ref
@@ -278,6 +334,10 @@ class BibliotecaPage extends ConsumerWidget {
           .importJson(jsonString, merge: merge);
 
       if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      ref.invalidate(bibliotecaProvider); // resta utile come sicurezza
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -285,12 +345,18 @@ class BibliotecaPage extends ConsumerWidget {
                 ? '$count nuovi libri importati'
                 : '$count libri importati (libreria sostituita)',
           ),
+          duration: const Duration(seconds: 3),
         ),
       );
     } catch (e) {
       if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Errore durante l\'importazione: $e')),
+        SnackBar(
+          content: Text('Errore durante l\'importazione: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
     }
   }
@@ -373,7 +439,8 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Aggiungi il tuo primo libro per iniziare',
+            'Aggiungi il tuo primo libro per iniziare\nScorri verso il basso per aggiornare',
+            textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -419,7 +486,8 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
       text: widget.libro?.copertinaUrl ?? '',
     );
     if (widget.libro != null) {
-      _dataLettura = widget.libro!.dataLettura;
+      _dataLettura =
+          widget.libro!.dataLettura ?? DateTime.now(); // FIX: fallback se null
     }
   }
 
@@ -447,7 +515,6 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Titolo del dialog
                 Row(
                   children: [
                     Container(
@@ -470,10 +537,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
-                // Campo titolo
                 TextFormField(
                   controller: _titoloController,
                   decoration: InputDecoration(
@@ -486,10 +550,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                   validator: (v) =>
                       v == null || v.isEmpty ? 'Inserisci il titolo' : null,
                 ),
-
                 const SizedBox(height: 16),
-
-                // Campo autore
                 TextFormField(
                   controller: _autoreController,
                   decoration: InputDecoration(
@@ -502,10 +563,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                   validator: (v) =>
                       v == null || v.isEmpty ? 'Inserisci l\'autore' : null,
                 ),
-
                 const SizedBox(height: 16),
-
-                // Data lettura
                 InkWell(
                   onTap: () async {
                     final date = await showDatePicker(
@@ -514,7 +572,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2030),
                     );
-                    if (date != null) {
+                    if (date != null && mounted) {
                       setState(() {
                         _dataLettura = date;
                       });
@@ -533,10 +591,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                // URL copertina
                 TextFormField(
                   controller: _copertinaController,
                   decoration: InputDecoration(
@@ -549,10 +604,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                   ),
                   keyboardType: TextInputType.url,
                 ),
-
                 const SizedBox(height: 24),
-
-                // Pulsanti
                 Row(
                   children: [
                     Expanded(

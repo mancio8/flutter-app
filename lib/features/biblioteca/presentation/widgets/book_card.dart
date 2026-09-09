@@ -6,17 +6,12 @@ class BookCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
-  const BookCard({
-    super.key,
-    required this.libro,
-    this.onEdit,
-    this.onDelete,
-  });
+  const BookCard({super.key, required this.libro, this.onEdit, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -48,7 +43,8 @@ class BookCard extends StatelessWidget {
                   ],
                 ),
               ),
-              child: libro.copertinaUrl != null && libro.copertinaUrl!.isNotEmpty
+              child:
+                  libro.copertinaUrl != null && libro.copertinaUrl!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(20),
@@ -65,8 +61,8 @@ class BookCard extends StatelessWidget {
                           return Center(
                             child: CircularProgressIndicator(
                               value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / 
-                                    loadingProgress.expectedTotalBytes!
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
                                   : null,
                             ),
                           );
@@ -76,7 +72,7 @@ class BookCard extends StatelessWidget {
                   : _buildPlaceholder(theme),
             ),
           ),
-          
+
           // Dettagli
           Padding(
             padding: const EdgeInsets.all(16),
@@ -94,7 +90,7 @@ class BookCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Autore
                 Row(
                   children: [
@@ -117,7 +113,7 @@ class BookCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                
+
                 // Data
                 Row(
                   children: [
@@ -128,7 +124,10 @@ class BookCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _formatData(libro.dataLettura),
+                      // FIX: dataLettura ora è nullable
+                      libro.dataLettura != null
+                          ? _formatData(libro.dataLettura!)
+                          : 'Data non disponibile',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.secondary,
                         fontWeight: FontWeight.w500,
@@ -136,9 +135,9 @@ class BookCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Azioni
                 Row(
                   children: [
@@ -193,8 +192,18 @@ class BookCard extends StatelessWidget {
 
   String _formatData(DateTime data) {
     final mesi = [
-      'gen', 'feb', 'mar', 'apr', 'mag', 'giu',
-      'lug', 'ago', 'set', 'ott', 'nov', 'dic',
+      'gen',
+      'feb',
+      'mar',
+      'apr',
+      'mag',
+      'giu',
+      'lug',
+      'ago',
+      'set',
+      'ott',
+      'nov',
+      'dic',
     ];
     return '${data.day} ${mesi[data.month - 1]} ${data.year}';
   }
