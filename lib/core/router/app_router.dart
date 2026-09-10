@@ -24,6 +24,7 @@ import '../../features/biblioteca/presentation/pages/biblioteca_page.dart';
 import '../../features/biblioteca/presentation/pages/wishlist_page.dart'; // NUOVO IMPORT
 import '../../features/note/presentation/pages/note_page.dart';
 import '../../features/habits/presentation/pages/habits_page.dart';
+import '../../features/veicoli/presentation/pages/gestione_veicolo_page.dart'; // NUOVO IMPORT
 import '../../features/veicoli/presentation/pages/veicoli_page.dart';
 import '../../features/allenamenti/presentation/pages/allenamenti_page.dart';
 
@@ -168,6 +169,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/wishlist',
             builder: (context, state) => const WishlistPage(),
+          ),
+          GoRoute(
+            path: '/gestione-veicolo/:veicoloId',
+            builder: (context, state) {
+              final veicoloId = state.pathParameters['veicoloId']!;
+              final nome = state.uri.queryParameters['nome'] ?? 'Veicolo';
+              return GestioneVeicoloPage(
+                veicoloId: veicoloId,
+                nomeVeicolo: nome,
+              );
+            },
           ),
         ],
       ),

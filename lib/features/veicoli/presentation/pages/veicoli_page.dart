@@ -1,6 +1,6 @@
-// File: lib/features/veicoli/presentation/pages/veicoli_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/models/veicolo.dart';
 import '../../providers/veicoli_provider.dart';
 
@@ -20,7 +20,6 @@ class VeicoliPage extends ConsumerWidget {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // AppBar coerente con le altre pagine
             SliverAppBar(
               expandedHeight: 120,
               floating: true,
@@ -64,7 +63,6 @@ class VeicoliPage extends ConsumerWidget {
               ),
             ),
 
-            // Contatore veicoli
             SliverToBoxAdapter(
               child: veicoliAsync.when(
                 loading: () => const SizedBox(),
@@ -81,7 +79,6 @@ class VeicoliPage extends ConsumerWidget {
               ),
             ),
 
-            // Lista veicoli
             veicoliAsync.when(
               loading: () => const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
@@ -92,27 +89,18 @@ class VeicoliPage extends ConsumerWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 60,
-                        color: Colors.red[300],
-                      ),
+                      Icon(Icons.error_outline, size: 60, color: Colors.red[300]),
                       const SizedBox(height: 16),
                       const Text('Errore nel caricamento'),
                       const SizedBox(height: 8),
                       Text(
                         '$e',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          ref.invalidate(veicoliProvider);
-                        },
+                        onPressed: () => ref.invalidate(veicoliProvider),
                         icon: const Icon(Icons.refresh),
                         label: const Text('Riprova'),
                       ),
@@ -142,6 +130,13 @@ class VeicoliPage extends ConsumerWidget {
                               _showEditVeicoloDialog(context, ref, veicolo),
                           onDelete: () =>
                               _confirmDelete(context, ref, veicolo),
+                          onManage: () {
+                            // 👇 NAVIGAZIONE ALLA GESTIONE VEICOLO
+                            context.push(
+                              '/gestione-veicolo/${veicolo.id}'
+                              '?nome=${Uri.encodeComponent(veicolo.nome)}',
+                            );
+                          },
                         );
                       },
                       childCount: veicoli.length,
@@ -168,11 +163,7 @@ class VeicoliPage extends ConsumerWidget {
     );
   }
 
-  void _showEditVeicoloDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Veicolo veicolo,
-  ) {
+  void _showEditVeicoloDialog(BuildContext context, WidgetRef ref, Veicolo veicolo) {
     showDialog(
       context: context,
       builder: (context) => _VeicoloDialog(ref: ref, veicolo: veicolo),
@@ -208,7 +199,10 @@ class VeicoliPage extends ConsumerWidget {
   }
 }
 
-// Stato vuoto coerente con BibliotecaPage / WishlistPage / RifornimentiPage
+// ============================================================
+// STATO VUOTO
+// ============================================================
+
 class _VeicoliEmptyState extends StatelessWidget {
   final VoidCallback onAdd;
 
@@ -261,16 +255,21 @@ class _VeicoliEmptyState extends StatelessWidget {
   }
 }
 
-// Card veicolo ridisegnata con stile coerente
+// ============================================================
+// CARD VEICOLO — con tap per aprire la gestione
+// ============================================================
+
 class _VeicoloCard extends StatelessWidget {
   final Veicolo veicolo;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onManage;
 
   const _VeicoloCard({
     required this.veicolo,
     required this.onEdit,
     required this.onDelete,
+    required this.onManage,
   });
 
   @override
@@ -290,88 +289,100 @@ class _VeicoloCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Icona in box colorato
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                Icons.directions_car,
-                color: theme.colorScheme.primary,
-                size: 30,
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Nome + info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    veicolo.nome,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onManage, // 👈 TAP SULLA CARD
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  const SizedBox(height: 6),
-                  // Badge targa e tipo come chip
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
+                  child: Icon(
+                    Icons.directions_car,
+                    color: theme.colorScheme.primary,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (veicolo.targa != null && veicolo.targa!.isNotEmpty)
-                        _InfoBadge(
-                          icon: Icons.badge_outlined,
-                          label: veicolo.targa!,
-                          theme: theme,
+                      Text(
+                        veicolo.nome,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      if (veicolo.tipo != null && veicolo.tipo!.isNotEmpty)
-                        _InfoBadge(
-                          icon: Icons.category_outlined,
-                          label: veicolo.tipo!,
-                          theme: theme,
-                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          if (veicolo.targa != null && veicolo.targa!.isNotEmpty)
+                            _InfoBadge(
+                              icon: Icons.badge_outlined,
+                              label: veicolo.targa!,
+                              theme: theme,
+                            ),
+                          if (veicolo.tipo != null && veicolo.tipo!.isNotEmpty)
+                            _InfoBadge(
+                              icon: Icons.category_outlined,
+                              label: veicolo.tipo!,
+                              theme: theme,
+                            ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            // Azioni
-            Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: onEdit,
-                  tooltip: 'Modifica',
-                  color: theme.colorScheme.primary,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: onDelete,
-                  tooltip: 'Elimina',
-                  color: theme.colorScheme.error,
+                // Azioni
+                Column(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.build_outlined),
+                      onPressed: onManage,
+                      tooltip: 'Gestisci manutenzioni e scadenze',
+                      color: theme.colorScheme.primary,
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          onPressed: onEdit,
+                          tooltip: 'Modifica',
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          onPressed: onDelete,
+                          tooltip: 'Elimina',
+                          color: theme.colorScheme.error,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// Badge per targa / tipo
 class _InfoBadge extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -394,11 +405,7 @@ class _InfoBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 12,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 4),
           Text(
             label,
@@ -412,6 +419,10 @@ class _InfoBadge extends StatelessWidget {
     );
   }
 }
+
+// ============================================================
+// DIALOG VEICOLO (add + edit)
+// ============================================================
 
 class _VeicoloDialog extends ConsumerStatefulWidget {
   final WidgetRef ref;
@@ -463,7 +474,6 @@ class _VeicoloDialogState extends ConsumerState<_VeicoloDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header con icona
                 Row(
                   children: [
                     Container(
@@ -522,8 +532,7 @@ class _VeicoloDialogState extends ConsumerState<_VeicoloDialog> {
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
-                  initialValue:
-                      _tipoController.text.isEmpty ? null : _tipoController.text,
+                  value: _tipoController.text.isEmpty ? null : _tipoController.text,
                   decoration: InputDecoration(
                     labelText: 'Tipo Veicolo (opzionale)',
                     prefixIcon: const Icon(Icons.category_outlined),
@@ -544,7 +553,6 @@ class _VeicoloDialogState extends ConsumerState<_VeicoloDialog> {
                 ),
                 const SizedBox(height: 24),
 
-                // Bottoni in stile _AddBookDialog / _AddRifornimentoDialog
                 Row(
                   children: [
                     Expanded(
