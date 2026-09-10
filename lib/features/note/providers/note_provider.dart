@@ -20,9 +20,7 @@ class NoteNotifier extends AsyncNotifier<List<Nota>> {
   }
 
   Future<void> refreshNote() async {
-    final repository = ref.read(noteRepositoryProvider);
-    final note = await repository.getNote();
-    state = AsyncValue.data(_ordina(note));
+    await _reload();
   }
 
   // Fissate in cima, poi per data decrescente

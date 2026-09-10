@@ -14,74 +14,176 @@ class NotePage extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Note')),
-      body: Column(
-        children: [
-          // Filtro categorie
-          SizedBox(
-            height: 48,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              children: [
-                _CategoriaChip(
-                  label: 'Tutte',
-                  selezionata: filtro == null,
-                  onTap: () =>
-                      ref.read(filtroCategoriaProvider.notifier).state = null,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(noteProvider.notifier).refreshNote();
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // AppBar coerente con Biblioteca/Raccolta
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: true,
+              pinned: true,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                title: Row(
+                  children: [
+                    const Icon(Icons.sticky_note_2_outlined, size: 28),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Note',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
                 ),
-                ...CategoriaNota.values.map(
-                  (c) => _CategoriaChip(
-                    label: c.label,
-                    icon: c.icon,
-                    selezionata: filtro == c,
-                    onTap: () =>
-                        ref.read(filtroCategoriaProvider.notifier).state = c,
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primaryContainer,
+                        theme.colorScheme.secondaryContainer,
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.push_pin_outlined,
+                      size: 80,
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-          Expanded(
-            child: noteAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Errore: $e')),
-              data: (note) {
-                if (note.isEmpty) {
-                  return Center(
+
+            // Filtro categorie — card con ombra invece di barra "nuda"
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _CategoriaChip(
+                        label: 'Tutte',
+                        selezionata: filtro == null,
+                        onTap: () =>
+                            ref.read(filtroCategoriaProvider.notifier).state =
+                                null,
+                      ),
+                      ...CategoriaNota.values.map(
+                        (c) => _CategoriaChip(
+                          label: c.label,
+                          icon: c.icon,
+                          selezionata: filtro == c,
+                          onTap: () =>
+                              ref.read(filtroCategoriaProvider.notifier).state =
+                                  c,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Contatore note — stesso stile del contatore libri in Biblioteca
+            SliverToBoxAdapter(
+              child: noteAsync.when(
+                loading: () => const SizedBox(),
+                error: (_, __) => const SizedBox(),
+                data: (note) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    '${note.length} note',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Griglia note
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: noteAsync.when(
+                loading: () => const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (e, _) => SliverFillRemaining(
+                  child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.note_add_outlined,
-                          size: 64,
-                          color: theme.colorScheme.outline,
+                          Icons.error_outline,
+                          size: 60,
+                          color: Colors.red[300],
                         ),
-                        const SizedBox(height: 12),
-                        const Text('Nessuna nota'),
+                        const SizedBox(height: 16),
+                        const Text('Errore nel caricamento'),
+                        const SizedBox(height: 8),
+                        Text(
+                          '$e',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => ref.invalidate(noteProvider),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Riprova'),
+                        ),
                       ],
                     ),
-                  );
-                }
+                  ),
+                ),
+                data: (note) {
+                  if (note.isEmpty) {
+                    return SliverFillRemaining(
+                      child: _EmptyState(
+                        onAdd: () => _showAddDialog(context, ref),
+                      ),
+                    );
+                  }
 
-                // Sostituisci la GridView.builder con questo codice:
-
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    await ref.read(noteProvider.notifier).refreshNote();
-                  },
-                  child: GridView.builder(
-                    physics:
-                        const AlwaysScrollableScrollPhysics(), // Importante per far funzionare il refresh anche quando ci sono poche note
-                    padding: const EdgeInsets.all(12),
+                  return SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: _getCrossAxisCount(context),
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                       childAspectRatio: 0.85,
                     ),
-                    itemCount: note.length,
-                    itemBuilder: (context, index) {
+                    delegate: SliverChildBuilderDelegate((context, index) {
                       final nota = note[index];
                       return NotaCard(
                         nota: nota,
@@ -90,13 +192,13 @@ class NotePage extends ConsumerWidget {
                         onTogglePin: () =>
                             ref.read(noteProvider.notifier).togglePin(nota.id),
                       );
-                    },
-                  ),
-                );
-              },
+                    }, childCount: note.length),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(context, ref),
@@ -130,6 +232,7 @@ class NotePage extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Eliminare questa nota?'),
         content: const Text('L\'operazione non è reversibile.'),
         actions: [
@@ -147,6 +250,58 @@ class NotePage extends ConsumerWidget {
               foregroundColor: Colors.white,
             ),
             child: const Text('Elimina'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Stato vuoto — stesso linguaggio visivo di _EmptyState in Biblioteca
+class _EmptyState extends StatelessWidget {
+  final VoidCallback onAdd;
+
+  const _EmptyState({required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.note_add_outlined,
+              size: 80,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Nessuna nota',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Aggiungi la tua prima nota per iniziare',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add),
+            label: const Text('Aggiungi nota'),
           ),
         ],
       ),
@@ -183,7 +338,7 @@ class _CategoriaChip extends StatelessWidget {
   }
 }
 
-// Dialog per aggiungere/modificare una nota
+// Dialog per aggiungere/modificare una nota — invariato, già coerente
 class _NotaDialog extends ConsumerStatefulWidget {
   final WidgetRef ref;
   final Nota? nota;
@@ -217,8 +372,10 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
         padding: const EdgeInsets.all(24),
@@ -227,15 +384,30 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                isEditing ? 'Modifica nota' : 'Nuova nota',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isEditing ? Icons.edit : Icons.add,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    isEditing ? 'Modifica nota' : 'Nuova nota',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // Testo nota
               TextFormField(
                 controller: _testoController,
                 maxLines: 4,
@@ -249,7 +421,6 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Categoria
               const Text(
                 'Categoria',
                 style: TextStyle(fontWeight: FontWeight.w600),
@@ -269,7 +440,6 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Colore
               const Text(
                 'Colore',
                 style: TextStyle(fontWeight: FontWeight.w600),
@@ -310,6 +480,12 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       child: const Text('Annulla'),
                     ),
                   ),
@@ -317,6 +493,12 @@ class _NotaDialogState extends ConsumerState<_NotaDialog> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _save,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       child: Text(isEditing ? 'Salva' : 'Aggiungi'),
                     ),
                   ),
