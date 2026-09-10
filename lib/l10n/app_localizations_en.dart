@@ -153,8 +153,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeTitle => 'Welcome to Flutter Starter';
 
   @override
-  String get welcomeSubtitle =>
-      'A Material 3 starter template with authentication,\\ntheming, and responsive navigation';
+  String get welcomeSubtitle => '';
 
   @override
   String get uiComponents => 'UI Components';

@@ -1,8 +1,8 @@
+// File: lib/features/raccolta/presentation/pages/raccolta_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/raccolta.dart';
 import '../../providers/raccolta_provider.dart';
-import '../widgets/day_pill.dart';
 import '../widgets/waste_card.dart';
 
 class RaccoltaPage extends ConsumerWidget {
@@ -99,29 +99,87 @@ class RaccoltaPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     tuttiGiorniAsync.when(
-                      loading: () => const Center(child: CircularProgressIndicator()),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
                       error: (e, _) => Text('Errore: $e'),
                       data: (giorni) {
-                        return SizedBox(
-                          height: 50,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: giorni.length,
-                            itemBuilder: (context, index) {
-                              final giorno = giorni[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: DayPill(
-                                  label: giorno.nome.substring(0, 3),
-                                  isActive: giorno.giorno == giornoSelezionato,
-                                  isToday: giorno.giorno == oggi,
+                        return Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: giorni.map((giorno) {
+                              final isActive =
+                                  giorno.giorno == giornoSelezionato;
+                              final isToday = giorno.giorno == oggi;
+
+                              return Expanded(
+                                child: GestureDetector(
                                   onTap: () {
-                                    ref.read(giornoSelezionatoProvider.notifier).state =
-                                        giorno.giorno;
+                                    ref
+                                        .read(giornoSelezionatoProvider
+                                            .notifier)
+                                        .state = giorno.giorno;
                                   },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isActive
+                                          ? theme.colorScheme.primary
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          giorno.nome
+                                              .substring(0, 3)
+                                              .toUpperCase(),
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                            color: isActive
+                                                ? theme
+                                                    .colorScheme.onPrimary
+                                                : theme.colorScheme
+                                                    .onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        if (isToday)
+                                          Container(
+                                            width: 6,
+                                            height: 6,
+                                            decoration: BoxDecoration(
+                                              color: isActive
+                                                  ? theme.colorScheme
+                                                      .onPrimary
+                                                  : theme.colorScheme.primary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          )
+                                        else
+                                          const SizedBox(height: 6),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               );
-                            },
+                            }).toList(),
                           ),
                         );
                       },
@@ -174,7 +232,8 @@ class RaccoltaPage extends ConsumerWidget {
                                 Text(
                                   'La sera prima dalle 22:00 alle 05:00',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                    color:
+                                        theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -188,7 +247,8 @@ class RaccoltaPage extends ConsumerWidget {
 
                     // Titolo raccolta del giorno — stesso stile "barretta laterale"
                     raccoltaAsync.when(
-                      loading: () => const Center(child: CircularProgressIndicator()),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
                       error: (e, _) => Text('Errore: $e'),
                       data: (raccolta) {
                         return Row(
@@ -217,7 +277,8 @@ class RaccoltaPage extends ConsumerWidget {
 
                     // Schede rifiuti
                     raccoltaAsync.when(
-                      loading: () => const Center(child: CircularProgressIndicator()),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
                       error: (e, _) => Text('Errore: $e'),
                       data: (raccolta) {
                         if (raccolta.rifiuti.isEmpty) {
@@ -227,7 +288,8 @@ class RaccoltaPage extends ConsumerWidget {
                         return GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: _getCrossAxisCount(context),
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
@@ -262,12 +324,27 @@ class RaccoltaPage extends ConsumerWidget {
   String _getDataOggi() {
     final now = DateTime.now();
     final giorni = [
-      'Domenica', 'Lunedì', 'Martedì', 'Mercoledì',
-      'Giovedì', 'Venerdì', 'Sabato',
+      'Domenica',
+      'Lunedì',
+      'Martedì',
+      'Mercoledì',
+      'Giovedì',
+      'Venerdì',
+      'Sabato',
     ];
     final mesi = [
-      'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
-      'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre',
+      'gennaio',
+      'febbraio',
+      'marzo',
+      'aprile',
+      'maggio',
+      'giugno',
+      'luglio',
+      'agosto',
+      'settembre',
+      'ottobre',
+      'novembre',
+      'dicembre',
     ];
 
     final giorno = giorni[now.weekday % 7];

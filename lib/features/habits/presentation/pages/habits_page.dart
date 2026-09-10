@@ -1,3 +1,4 @@
+// File: lib/features/habits/presentation/pages/habits_page.dart
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -19,234 +20,375 @@ class HabitsPage extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Habit Tracker'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              _handleMenuAction(context, ref, value);
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem<String>(
-                value: 'import',
-                child: Row(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.refresh(habitsProvider.future);
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // ============================================================
+            // APP BAR coerente con le altre pagine
+            // ============================================================
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: true,
+              pinned: true,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                title: Row(
                   children: [
-                    Icon(Icons.upload),
-                    SizedBox(width: 8),
-                    Text('Importa'),
+                    const Icon(Icons.checklist_rtl, size: 28),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Habit Tracker',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'export',
-                child: Row(
-                  children: [
-                    Icon(Icons.download),
-                    SizedBox(width: 8),
-                    Text('Esporta dati'),
-                  ],
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primaryContainer,
+                        theme.colorScheme.secondaryContainer,
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.emoji_events_outlined,
+                      size: 80,
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
                 ),
               ),
-              const PopupMenuItem<String>(
-                value: 'export_stats',
-                child: Row(
-                  children: [
-                    Icon(Icons.assessment),
-                    SizedBox(width: 8),
-                    Text('Esporta statistiche'),
+              actions: [
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) {
+                    _handleMenuAction(context, ref, value);
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem<String>(
+                      value: 'import',
+                      child: Row(
+                        children: [
+                          Icon(Icons.upload),
+                          SizedBox(width: 8),
+                          Text('Importa'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'export',
+                      child: Row(
+                        children: [
+                          Icon(Icons.download),
+                          SizedBox(width: 8),
+                          Text('Esporta dati'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'export_stats',
+                      child: Row(
+                        children: [
+                          Icon(Icons.assessment),
+                          SizedBox(width: 8),
+                          Text('Esporta statistiche'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'export_csv',
+                      child: Row(
+                        children: [
+                          Icon(Icons.table_chart),
+                          SizedBox(width: 8),
+                          Text('Esporta CSV'),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'export_csv',
-                child: Row(
-                  children: [
-                    Icon(Icons.table_chart),
-                    SizedBox(width: 8),
-                    Text('Esporta CSV'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-
-      body: Column(
-        children: [
-          // ============================================================
-          // PROGRESSO GIORNALIERO
-          // ============================================================
-
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primaryContainer,
-                  theme.colorScheme.secondaryContainer,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
+              ],
             ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+            // ============================================================
+            // HEADER "OGGI" con barretta laterale
+            // ============================================================
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: Row(
                   children: [
+                    Container(
+                      width: 4,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Text(
                       'Oggi',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ============================================================
+            // CARD PROGRESSO GIORNALIERO
+            // ============================================================
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.today,
+                                color: theme.colorScheme.primary,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Progresso di oggi',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${stats.percentuale.toStringAsFixed(0)}% completato',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color:
+                                        theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '${stats.completatiOggi}/${stats.totale}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: stats.totale > 0
+                            ? stats.percentuale / 100
+                            : 0,
+                        minHeight: 10,
+                        backgroundColor:
+                            theme.colorScheme.surfaceVariant,
+                      ),
+                    ),
+                    if (stats.migliorStreak > 0) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.local_fire_department,
+                              color: Colors.orange,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Miglior streak: ${stats.migliorStreak} giorni',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange[900],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            // ============================================================
+            // HEADER "LE TUE ABITUDINI"
+            // ============================================================
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 28, 16, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      '${stats.completatiOggi}/${stats.totale}',
+                      'Le tue abitudini',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 12),
-
-                LinearProgressIndicator(
-                  value: stats.totale > 0
-                      ? stats.percentuale / 100
-                      : 0,
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  '${stats.percentuale.toStringAsFixed(0)}% completato',
-                  style: theme.textTheme.bodySmall,
-                ),
-
-                if (stats.migliorStreak > 0) ...[
-                  const SizedBox(height: 8),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.local_fire_department,
-                        color: Colors.orange,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Miglior streak: ${stats.migliorStreak} giorni',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
 
-          // ============================================================
-          // LISTA ABITUDINI
-          // ============================================================
-
-          Expanded(
-            child: habitsAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
+            // ============================================================
+            // LISTA ABITUDINI
+            // ============================================================
+            habitsAsync.when(
+              loading: () => const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
               ),
 
-              error: (error, stackTrace) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Errore: $error',
-                    textAlign: TextAlign.center,
+              error: (e, _) => SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 60,
+                        color: Colors.red[300],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Errore nel caricamento'),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$e',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          ref.invalidate(habitsProvider);
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Riprova'),
+                      ),
+                    ],
                   ),
                 ),
               ),
 
               data: (habits) {
                 if (habits.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 16),
-                        Text('Nessuna abitudine'),
-                        SizedBox(height: 8),
-                        Text('Aggiungi la tua prima abitudine!'),
-                      ],
+                  return SliverFillRemaining(
+                    child: _HabitsEmptyState(
+                      onAdd: () => _showAddDialog(context, ref),
                     ),
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    4,
-                    16,
-                    100,
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final habit = habits[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: HabitCard(
+                            habit: habit,
+                            onToggle: () {
+                              ref
+                                  .read(habitsProvider.notifier)
+                                  .toggleCompletamento(
+                                    habit.id,
+                                    DateTime.now(),
+                                  );
+                            },
+                            onEdit: () {
+                              _showEditDialog(context, ref, habit);
+                            },
+                            onDelete: () {
+                              _confirmDelete(context, ref, habit);
+                            },
+                          ),
+                        );
+                      },
+                      childCount: habits.length,
+                    ),
                   ),
-                  itemCount: habits.length,
-                  itemBuilder: (context, index) {
-                    final habit = habits[index];
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: HabitCard(
-                        habit: habit,
-
-                        onToggle: () {
-                          ref
-                              .read(habitsProvider.notifier)
-                              .toggleCompletamento(
-                                habit.id,
-                                DateTime.now(),
-                              );
-                        },
-
-                        onEdit: () {
-                          _showEditDialog(
-                            context,
-                            ref,
-                            habit,
-                          );
-                        },
-
-                        onDelete: () {
-                          _confirmDelete(
-                            context,
-                            ref,
-                            habit,
-                          );
-                        },
-                      ),
-                    );
-                  },
                 );
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           _showAddDialog(context, ref);
         },
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Aggiungi'),
       ),
     );
   }
@@ -266,26 +408,15 @@ class HabitsPage extends ConsumerWidget {
         break;
 
       case 'export':
-        _exportData(
-          context,
-          ref,
-          'json',
-        );
+        _exportData(context, ref, 'json');
         break;
 
       case 'export_stats':
-        _showExportStatsDialog(
-          context,
-          ref,
-        );
+        _showExportStatsDialog(context, ref);
         break;
 
       case 'export_csv':
-        _exportData(
-          context,
-          ref,
-          'csv',
-        );
+        _exportData(context, ref, 'csv');
         break;
     }
   }
@@ -302,16 +433,9 @@ class HabitsPage extends ConsumerWidget {
     final habits = ref.read(habitsProvider).value ?? [];
 
     if (habits.isEmpty) {
-      _showSnackBar(
-        context,
-        'Nessun dato da esportare',
-      );
+      _showSnackBar(context, 'Nessun dato da esportare');
       return;
     }
-
-    // ---------------------------------------------------------------
-    // Mostra loading
-    // ---------------------------------------------------------------
 
     showDialog<void>(
       context: context,
@@ -328,72 +452,30 @@ class HabitsPage extends ConsumerWidget {
     );
 
     try {
-      // -------------------------------------------------------------
-      // Generazione file
-      // -------------------------------------------------------------
-
       late final File file;
 
       if (format == 'csv') {
-        file = await HabitsImportExportService.exportStatsToCsv(
-          habits,
-        );
+        file = await HabitsImportExportService.exportStatsToCsv(habits);
       } else {
-        file = await HabitsImportExportService.exportToJson(
-          habits,
-        );
+        file = await HabitsImportExportService.exportToJson(habits);
       }
 
-      // -------------------------------------------------------------
-      // Chiudi il dialog PRIMA di Share
-      // -------------------------------------------------------------
-
       if (context.mounted) {
-        Navigator.of(
-          context,
-          rootNavigator: true,
-        ).pop();
+        Navigator.of(context, rootNavigator: true).pop();
       }
 
-      // -------------------------------------------------------------
-      // Condivisione
-      // -------------------------------------------------------------
-
-      await Share.shareXFiles(
-        [
-          XFile(file.path),
-        ],
-      );
-
-      // -------------------------------------------------------------
-      // Feedback
-      // -------------------------------------------------------------
+      await Share.shareXFiles([XFile(file.path)]);
 
       if (context.mounted) {
-        _showSnackBar(
-          context,
-          'Esportati ${habits.length} habits',
-        );
+        _showSnackBar(context, 'Esportati ${habits.length} habits');
       }
     } catch (e) {
-      // -------------------------------------------------------------
-      // Chiudi eventuale loading
-      // -------------------------------------------------------------
-
       if (context.mounted) {
-        final navigator = Navigator.of(
-          context,
-          rootNavigator: true,
-        );
-
+        final navigator = Navigator.of(context, rootNavigator: true);
         if (navigator.canPop()) {
           navigator.pop();
         }
-
-        _showSnackBar(
-          context,
-          'Errore durante l\'esportazione: $e',
-        );
+        _showSnackBar(context, 'Errore durante l\'esportazione: $e');
       }
     }
   }
@@ -410,39 +492,26 @@ class HabitsPage extends ConsumerWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Esporta Statistiche',
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          content: const Text(
-            'Scegli il formato:',
-          ),
+          title: const Text('Esporta Statistiche'),
+          content: const Text('Scegli il formato:'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-
-                _exportStats(
-                  context,
-                  ref,
-                  'json',
-                );
+                _exportStats(context, ref, 'json');
               },
               child: const Text('JSON'),
             ),
-
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-
-                _exportStats(
-                  context,
-                  ref,
-                  'csv',
-                );
+                _exportStats(context, ref, 'csv');
               },
               child: const Text('CSV'),
             ),
-
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
@@ -467,10 +536,7 @@ class HabitsPage extends ConsumerWidget {
     final habits = ref.read(habitsProvider).value ?? [];
 
     if (habits.isEmpty) {
-      _showSnackBar(
-        context,
-        'Nessun dato da esportare',
-      );
+      _showSnackBar(context, 'Nessun dato da esportare');
       return;
     }
 
@@ -478,33 +544,19 @@ class HabitsPage extends ConsumerWidget {
       late final File file;
 
       if (format == 'json') {
-        file = await HabitsImportExportService.exportStatsToJson(
-          habits,
-        );
+        file = await HabitsImportExportService.exportStatsToJson(habits);
       } else {
-        file = await HabitsImportExportService.exportStatsToCsv(
-          habits,
-        );
+        file = await HabitsImportExportService.exportStatsToCsv(habits);
       }
 
-      await Share.shareXFiles(
-        [
-          XFile(file.path),
-        ],
-      );
+      await Share.shareXFiles([XFile(file.path)]);
 
       if (context.mounted) {
-        _showSnackBar(
-          context,
-          'Statistiche esportate!',
-        );
+        _showSnackBar(context, 'Statistiche esportate!');
       }
     } catch (e) {
       if (context.mounted) {
-        _showSnackBar(
-          context,
-          'Errore durante l\'esportazione: $e',
-        );
+        _showSnackBar(context, 'Errore durante l\'esportazione: $e');
       }
     }
   }
@@ -521,51 +573,26 @@ class HabitsPage extends ConsumerWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Importa Habits',
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          content: const Text(
-            'Come vuoi importare i dati?',
-          ),
+          title: const Text('Importa Habits'),
+          content: const Text('Come vuoi importare i dati?'),
           actions: [
-            // ---------------------------------------------------------
-            // UNISCI
-            // ---------------------------------------------------------
-
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-
-                _importHabits(
-                  context,
-                  ref,
-                  merge: true,
-                );
+                _importHabits(context, ref, merge: true);
               },
               child: const Text('Unisci'),
             ),
-
-            // ---------------------------------------------------------
-            // SOSTITUISCI
-            // ---------------------------------------------------------
-
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-
-                _importHabits(
-                  context,
-                  ref,
-                  merge: false,
-                );
+                _importHabits(context, ref, merge: false);
               },
               child: const Text('Sostituisci'),
             ),
-
-            // ---------------------------------------------------------
-            // ANNULLA
-            // ---------------------------------------------------------
-
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
@@ -588,23 +615,14 @@ class HabitsPage extends ConsumerWidget {
     required bool merge,
   }) async {
     try {
-      final habits =
-          await HabitsImportExportService.importFromJson();
+      final habits = await HabitsImportExportService.importFromJson();
 
       if (habits.isEmpty) {
         if (context.mounted) {
-          _showSnackBar(
-            context,
-            'Nessun dato importato',
-          );
+          _showSnackBar(context, 'Nessun dato importato');
         }
-
         return;
       }
-
-      // ---------------------------------------------------------------
-      // MERGE
-      // ---------------------------------------------------------------
 
       if (merge) {
         final aggiunti = await ref
@@ -612,60 +630,33 @@ class HabitsPage extends ConsumerWidget {
             .importHabits(habits);
 
         if (context.mounted) {
-          _showSnackBar(
-            context,
-            'Importati $aggiunti nuovi habits',
-          );
+          _showSnackBar(context, 'Importati $aggiunti nuovi habits');
         }
-
         return;
       }
 
-      // ---------------------------------------------------------------
-      // REPLACE
-      // ---------------------------------------------------------------
-
-      await ref
-          .read(habitsProvider.notifier)
-          .replaceAllHabits(habits);
+      await ref.read(habitsProvider.notifier).replaceAllHabits(habits);
 
       if (context.mounted) {
-        _showSnackBar(
-          context,
-          'Sostituiti ${habits.length} habits',
-        );
+        _showSnackBar(context, 'Sostituiti ${habits.length} habits');
       }
     } catch (e) {
       if (context.mounted) {
-        _showSnackBar(
-          context,
-          'Errore durante l\'importazione: $e',
-        );
+        _showSnackBar(context, 'Errore durante l\'importazione: $e');
       }
     }
   }
 
   // ==================================================================
-  // ADD HABIT
+  // ADD / EDIT / DELETE
   // ==================================================================
 
-  void _showAddDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  void _showAddDialog(BuildContext context, WidgetRef ref) {
     showDialog<void>(
       context: context,
-      builder: (_) {
-        return _AddHabitDialog(
-          ref: ref,
-        );
-      },
+      builder: (_) => _AddHabitDialog(ref: ref),
     );
   }
-
-  // ==================================================================
-  // EDIT HABIT
-  // ==================================================================
 
   void _showEditDialog(
     BuildContext context,
@@ -674,18 +665,9 @@ class HabitsPage extends ConsumerWidget {
   ) {
     showDialog<void>(
       context: context,
-      builder: (_) {
-        return _AddHabitDialog(
-          ref: ref,
-          habit: habit,
-        );
-      },
+      builder: (_) => _AddHabitDialog(ref: ref, habit: habit),
     );
   }
-
-  // ==================================================================
-  // DELETE CONFIRMATION
-  // ==================================================================
 
   void _confirmDelete(
     BuildContext context,
@@ -696,14 +678,11 @@ class HabitsPage extends ConsumerWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Eliminare questa abitudine?',
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-
-          content: Text(
-            '"${habit.nome}" verrà eliminata definitivamente.',
-          ),
-
+          title: const Text('Eliminare questa abitudine?'),
+          content: Text('"${habit.nome}" verrà eliminata definitivamente.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -711,21 +690,15 @@ class HabitsPage extends ConsumerWidget {
               },
               child: const Text('Annulla'),
             ),
-
             ElevatedButton(
               onPressed: () {
-                ref
-                    .read(habitsProvider.notifier)
-                    .deleteHabit(habit.id);
-
+                ref.read(habitsProvider.notifier).deleteHabit(habit.id);
                 Navigator.of(dialogContext).pop();
               },
-
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-
               child: const Text('Elimina'),
             ),
           ],
@@ -738,26 +711,73 @@ class HabitsPage extends ConsumerWidget {
   // SNACKBAR
   // ==================================================================
 
-  void _showSnackBar(
-    BuildContext context,
-    String message,
-  ) {
-    if (!context.mounted) {
-      return;
-    }
+  void _showSnackBar(BuildContext context, String message) {
+    if (!context.mounted) return;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-        ),
-      );
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
 // ======================================================================
-// DIALOG AGGIUNTA / MODIFICA ABITUDINE
+// STATO VUOTO coerente con le altre pagine
+// ======================================================================
+
+class _HabitsEmptyState extends StatelessWidget {
+  final VoidCallback onAdd;
+
+  const _HabitsEmptyState({required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 80,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Nessuna abitudine',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Aggiungi la tua prima abitudine per iniziare\nScorri verso il basso per aggiornare',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add),
+            label: const Text('Aggiungi abitudine'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ======================================================================
+// DIALOG AGGIUNTA / MODIFICA ABITUDINE — ridisegnato in stile coerente
 // ======================================================================
 
 class _AddHabitDialog extends ConsumerStatefulWidget {
@@ -775,8 +795,7 @@ class _AddHabitDialog extends ConsumerStatefulWidget {
   }
 }
 
-class _AddHabitDialogState
-    extends ConsumerState<_AddHabitDialog> {
+class _AddHabitDialogState extends ConsumerState<_AddHabitDialog> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nomeController;
@@ -825,11 +844,9 @@ class _AddHabitDialogState
     _nomeController = TextEditingController(
       text: widget.habit?.nome ?? '',
     );
-
     _descrizioneController = TextEditingController(
       text: widget.habit?.descrizione ?? '',
     );
-
     _obiettivoController = TextEditingController(
       text: widget.habit?.obiettivoMensile.toString() ?? '30',
     );
@@ -845,7 +862,6 @@ class _AddHabitDialogState
     _nomeController.dispose();
     _descrizioneController.dispose();
     _obiettivoController.dispose();
-
     super.dispose();
   }
 
@@ -853,242 +869,284 @@ class _AddHabitDialogState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AlertDialog(
-      title: Text(
-        isEditing
-            ? 'Modifica Abitudine'
-            : 'Nuova Abitudine',
-      ),
-
-      content: Form(
-        key: _formKey,
-
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ========================================================
-              // NOME
-              // ========================================================
-
-              TextFormField(
-                controller: _nomeController,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  hintText: 'Es. Bere acqua',
-                ),
-                textCapitalization:
-                    TextCapitalization.sentences,
-                validator: (value) {
-                  if (value == null ||
-                      value.trim().isEmpty) {
-                    return 'Inserisci un nome';
-                  }
-
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // ========================================================
-              // DESCRIZIONE
-              // ========================================================
-
-              TextFormField(
-                controller: _descrizioneController,
-                decoration: const InputDecoration(
-                  labelText: 'Descrizione (opzionale)',
-                  hintText: 'Es. Bere 2 litri al giorno',
-                ),
-                textCapitalization:
-                    TextCapitalization.sentences,
-                maxLines: 2,
-              ),
-
-              const SizedBox(height: 16),
-
-              // ========================================================
-              // ICONA
-              // ========================================================
-
-              Text(
-                'Icona',
-                style: theme.textTheme.labelLarge,
-              ),
-
-              const SizedBox(height: 8),
-
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _icone.map((icona) {
-                  final selezionata =
-                      icona == _icona;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _icona = icona;
-                      });
-                    },
-
-                    child: Container(
-                      padding:
-                          const EdgeInsets.all(8),
-
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 440),
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ========================================================
+                // HEADER
+                // ========================================================
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: selezionata
-                            ? theme
-                                .colorScheme
-                                .primaryContainer
-                            : Colors.transparent,
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isEditing ? Icons.edit : Icons.add,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      isEditing ? 'Modifica Abitudine' : 'Nuova Abitudine',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
 
-                        borderRadius:
-                            BorderRadius.circular(8),
+                // ========================================================
+                // NOME
+                // ========================================================
+                TextFormField(
+                  controller: _nomeController,
+                  decoration: InputDecoration(
+                    labelText: 'Nome',
+                    hintText: 'Es. Bere acqua',
+                    prefixIcon: const Icon(Icons.title),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Inserisci un nome';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-                        border: Border.all(
+                // ========================================================
+                // DESCRIZIONE
+                // ========================================================
+                TextFormField(
+                  controller: _descrizioneController,
+                  decoration: InputDecoration(
+                    labelText: 'Descrizione (opzionale)',
+                    hintText: 'Es. Bere 2 litri al giorno',
+                    prefixIcon: const Icon(Icons.notes),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 20),
+
+                // ========================================================
+                // ICONA
+                // ========================================================
+                Row(
+                  children: [
+                    Icon(
+                      Icons.emoji_emotions_outlined,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Icona',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _icone.map((icona) {
+                    final selezionata = icona == _icona;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _icona = icona;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
                           color: selezionata
-                              ? theme
-                                  .colorScheme
-                                  .primary
-                              : Colors.grey[300]!,
+                              ? theme.colorScheme.primaryContainer
+                              : theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selezionata
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outlineVariant,
+                            width: selezionata ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          icona,
+                          style: const TextStyle(fontSize: 22),
                         ),
                       ),
-
-                      child: Text(
-                        icona,
-                        style: const TextStyle(
-                          fontSize: 24,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ========================================================
-              // COLORE
-              // ========================================================
-
-              Text(
-                'Colore',
-                style: theme.textTheme.labelLarge,
-              ),
-
-              const SizedBox(height: 8),
-
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _colori.entries.map((entry) {
-                  final selezionato =
-                      entry.value == _colore;
-
-                  final color = Color(
-                    int.parse(
-                      entry.value.replaceFirst(
-                        '#',
-                        '0xFF',
-                      ),
-                    ),
-                  );
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _colore = entry.value;
-                      });
-                    },
-
-                    child: Container(
-                      width: 36,
-                      height: 36,
-
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-
-                        border: Border.all(
-                          color: selezionato
-                              ? Colors.black
-                              : Colors.transparent,
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ========================================================
-              // OBIETTIVO
-              // ========================================================
-
-              TextFormField(
-                controller: _obiettivoController,
-
-                decoration:
-                    const InputDecoration(
-                  labelText: 'Obiettivo mensile',
-                  hintText:
-                      'Quante volte al mese',
-                  suffixText: 'volte',
+                    );
+                  }).toList(),
                 ),
+                const SizedBox(height: 20),
 
-                keyboardType:
-                    TextInputType.number,
+                // ========================================================
+                // COLORE
+                // ========================================================
+                Row(
+                  children: [
+                    Icon(
+                      Icons.palette_outlined,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Colore',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: _colori.entries.map((entry) {
+                    final selezionato = entry.value == _colore;
+                    final color = Color(
+                      int.parse(
+                        entry.value.replaceFirst('#', '0xFF'),
+                      ),
+                    );
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _colore = entry.value;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: selezionato
+                                ? theme.colorScheme.onSurface
+                                : Colors.transparent,
+                            width: 3,
+                          ),
+                          boxShadow: selezionato
+                              ? [
+                                  BoxShadow(
+                                    color: color.withOpacity(0.5),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: selezionato
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
+                              )
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
 
-                validator: (value) {
-                  if (value == null ||
-                      value.trim().isEmpty) {
-                    return 'Inserisci un obiettivo';
-                  }
+                // ========================================================
+                // OBIETTIVO
+                // ========================================================
+                TextFormField(
+                  controller: _obiettivoController,
+                  decoration: InputDecoration(
+                    labelText: 'Obiettivo mensile',
+                    hintText: 'Quante volte al mese',
+                    suffixText: 'volte',
+                    prefixIcon: const Icon(Icons.flag_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Inserisci un obiettivo';
+                    }
+                    final numero = int.tryParse(value);
+                    if (numero == null) {
+                      return 'Numero non valido';
+                    }
+                    if (numero <= 0) {
+                      return 'Deve essere maggiore di 0';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
 
-                  final numero =
-                      int.tryParse(value);
-
-                  if (numero == null) {
-                    return 'Numero non valido';
-                  }
-
-                  if (numero <= 0) {
-                    return 'Deve essere maggiore di 0';
-                  }
-
-                  return null;
-                },
-              ),
-            ],
+                // ========================================================
+                // BOTTONI
+                // ========================================================
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Annulla'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _save,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(isEditing ? 'Salva' : 'Aggiungi'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-
-      // ==============================================================
-      // AZIONI
-      // ==============================================================
-
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: const Text('Annulla'),
-        ),
-
-        ElevatedButton(
-          onPressed: _save,
-          child: Text(
-            isEditing
-                ? 'Salva'
-                : 'Aggiungi',
-          ),
-        ),
-      ],
     );
   }
 
@@ -1097,55 +1155,28 @@ class _AddHabitDialogState
   // ==================================================================
 
   void _save() {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final nome = _nomeController.text.trim();
-
-    final descrizione =
-        _descrizioneController.text.trim();
-
-    final obiettivo =
-        int.parse(
-          _obiettivoController.text.trim(),
-        );
+    final descrizione = _descrizioneController.text.trim();
+    final obiettivo = int.parse(_obiettivoController.text.trim());
 
     final habit = Habit(
       id: widget.habit?.id ??
-          DateTime.now()
-              .millisecondsSinceEpoch
-              .toString(),
-
+          DateTime.now().millisecondsSinceEpoch.toString(),
       nome: nome,
-
-      descrizione: descrizione.isEmpty
-          ? null
-          : descrizione,
-
+      descrizione: descrizione.isEmpty ? null : descrizione,
       icona: _icona,
-
       colore: _colore,
-
-      dataCreazione:
-          widget.habit?.dataCreazione ??
-              DateTime.now(),
-
-      completamenti:
-          widget.habit?.completamenti ??
-              [],
-
+      dataCreazione: widget.habit?.dataCreazione ?? DateTime.now(),
+      completamenti: widget.habit?.completamenti ?? [],
       obiettivoMensile: obiettivo,
     );
 
     if (isEditing) {
-      widget.ref
-          .read(habitsProvider.notifier)
-          .updateHabit(habit);
+      widget.ref.read(habitsProvider.notifier).updateHabit(habit);
     } else {
-      widget.ref
-          .read(habitsProvider.notifier)
-          .addHabit(habit);
+      widget.ref.read(habitsProvider.notifier).addHabit(habit);
     }
 
     if (mounted) {

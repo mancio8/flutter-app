@@ -13,93 +13,150 @@ class WishlistPage extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lista dei Desideri'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(context, ref),
-            tooltip: 'Cerca libri',
-          ),
-        ],
-      ),
       body: RefreshIndicator(
         onRefresh: () async {
           await ref.refresh(wishlistProvider.future);
         },
-        child: wishlistAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.7,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // AppBar personalizzato come in BibliotecaPage
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: true,
+              pinned: true,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                title: Row(
+                  children: [
+                    const Icon(Icons.bookmark, size: 28),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Lista dei Desideri',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primaryContainer,
+                        theme.colorScheme.secondaryContainer,
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.bookmark_add_outlined,
+                      size: 80,
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () => _showSearchDialog(context, ref),
+                  tooltip: 'Cerca libri',
+                ),
+              ],
+            ),
+
+            // Contatore libri
+            SliverToBoxAdapter(
+              child: wishlistAsync.when(
+                loading: () => const SizedBox(),
+                error: (_, __) => const SizedBox(),
+                data: (libri) => Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Text(
+                    '${libri.length} libri nella wishlist',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Lista libri
+            wishlistAsync.when(
+              loading: () => const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+
+              error: (e, _) => SliverFillRemaining(
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                      Icon(
+                        Icons.error_outline,
+                        size: 60,
+                        color: Colors.red[300],
+                      ),
                       const SizedBox(height: 16),
-                      Text('Errore: $e'),
+                      const Text('Errore nel caricamento'),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$e',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => ref.invalidate(wishlistProvider),
-                        child: const Text('Riprova'),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          ref.invalidate(wishlistProvider);
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Riprova'),
                       ),
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
-          data: (libri) {
-            if (libri.isEmpty) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.7,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.bookmark_border,
-                            size: 80,
-                            color: theme.colorScheme.outline,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text('Nessun libro nella wishlist'),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Cerca e aggiungi libri che vuoi leggere\nScorri verso il basso per aggiornare',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
+
+              data: (libri) {
+                if (libri.isEmpty) {
+                  return SliverFillRemaining(
+                    child: _WishlistEmptyState(
+                      onSearch: () => _showSearchDialog(context, ref),
+                    ),
+                  );
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final libro = libri[index];
+                        return _WishlistCard(
+                          libro: libro,
+                          onMoveToRead: () =>
+                              _showMoveToReadDialog(context, ref, libro),
+                          onRemove: () => _confirmRemove(context, ref, libro),
+                        );
+                      },
+                      childCount: libri.length,
                     ),
                   ),
-                ],
-              );
-            }
-
-            return ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: libri.length,
-              itemBuilder: (context, index) {
-                final libro = libri[index];
-                return _WishlistCard(
-                  libro: libro,
-                  onMoveToRead: () => _showMoveToReadDialog(context, ref, libro),
-                  onRemove: () => _confirmRemove(context, ref, libro),
                 );
               },
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -116,6 +173,7 @@ class WishlistPage extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Segna come letto'),
         content: Text('Quando hai letto "${libro.titolo}"?'),
         actions: [
@@ -132,7 +190,8 @@ class WishlistPage extends ConsumerWidget {
                 lastDate: DateTime.now(),
               );
               if (date != null && context.mounted) {
-                await ref.read(bibliotecaProvider.notifier)
+                await ref
+                    .read(bibliotecaProvider.notifier)
                     .moveToRead(libro, date);
                 if (context.mounted) Navigator.pop(context);
               }
@@ -148,8 +207,11 @@ class WishlistPage extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Rimuovere dalla wishlist?'),
-        content: Text('"${libro.titolo}" verrà rimosso dalla lista dei desideri.'),
+        content: Text(
+          '"${libro.titolo}" verrà rimosso dalla lista dei desideri.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -157,7 +219,8 @@ class WishlistPage extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              ref.read(bibliotecaProvider.notifier)
+              ref
+                  .read(bibliotecaProvider.notifier)
                   .removeFromWishlist(libro.id);
               Navigator.pop(context);
             },
@@ -173,6 +236,60 @@ class WishlistPage extends ConsumerWidget {
   }
 }
 
+// Stato vuoto coerente con _EmptyState della biblioteca
+class _WishlistEmptyState extends StatelessWidget {
+  final VoidCallback onSearch;
+
+  const _WishlistEmptyState({required this.onSearch});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.bookmark_border,
+              size: 80,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Nessun libro nella wishlist',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Cerca e aggiungi libri che vuoi leggere\nScorri verso il basso per aggiornare',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onSearch,
+            icon: const Icon(Icons.search),
+            label: const Text('Cerca libri'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Card wishlist con stile coerente (margini, ombre, bordi arrotondati)
 class _WishlistCard extends StatelessWidget {
   final Libro libro;
   final VoidCallback onMoveToRead;
@@ -190,50 +307,101 @@ class _WishlistCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: libro.copertinaUrl != null
-            ? Image.network(
-                libro.copertinaUrl!,
-                width: 50,
-                height: 70,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 50,
-                    height: 70,
-                    color: theme.colorScheme.surfaceVariant,
-                    child: const Icon(Icons.menu_book),
-                  );
-                },
-              )
-            : Container(
-                width: 50,
-                height: 70,
-                color: theme.colorScheme.surfaceVariant,
-                child: const Icon(Icons.menu_book),
-              ),
-        title: Text(
-          libro.titolo,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(libro.autore),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconButton(
-              icon: const Icon(Icons.check_circle_outline),
-              onPressed: onMoveToRead,
-              tooltip: 'Segna come letto',
-              color: Colors.green,
+            // Copertina con angoli arrotondati
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: libro.copertinaUrl != null
+                  ? Image.network(
+                      libro.copertinaUrl!,
+                      width: 60,
+                      height: 85,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 60,
+                          height: 85,
+                          color: theme.colorScheme.surfaceVariant,
+                          child: const Icon(Icons.menu_book),
+                        );
+                      },
+                    )
+                  : Container(
+                      width: 60,
+                      height: 85,
+                      color: theme.colorScheme.surfaceVariant,
+                      child: const Icon(Icons.menu_book),
+                    ),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: onRemove,
-              tooltip: 'Rimuovi',
-              color: Colors.red,
+            const SizedBox(width: 12),
+
+            // Titolo + autore
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Text(
+                    libro.titolo,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    libro.autore,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Badge "In wishlist"
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Da leggere',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Azioni
+            Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.check_circle_outline),
+                  onPressed: onMoveToRead,
+                  tooltip: 'Segna come letto',
+                  color: Colors.green,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: onRemove,
+                  tooltip: 'Rimuovi',
+                  color: Colors.red,
+                ),
+              ],
             ),
           ],
         ),
@@ -242,6 +410,7 @@ class _WishlistCard extends StatelessWidget {
   }
 }
 
+// Dialog ricerca con stile coerente (bordi arrotondati 20)
 class _SearchBooksDialog extends ConsumerStatefulWidget {
   final WidgetRef ref;
 
@@ -274,7 +443,7 @@ class _SearchBooksDialogState extends ConsumerState<_SearchBooksDialog> {
       final results = await widget.ref
           .read(bibliotecaProvider.notifier)
           .searchOnline(query);
-      
+
       if (mounted) {
         setState(() {
           _results = results;
@@ -295,6 +464,8 @@ class _SearchBooksDialogState extends ConsumerState<_SearchBooksDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
@@ -303,6 +474,30 @@ class _SearchBooksDialogState extends ConsumerState<_SearchBooksDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Header con icona come _AddBookDialog
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.search,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Cerca libri',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
             TextField(
               controller: _searchController,
               autofocus: true,
@@ -333,7 +528,7 @@ class _SearchBooksDialogState extends ConsumerState<_SearchBooksDialog> {
                         : 'Nessun risultato trovato',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -344,37 +539,68 @@ class _SearchBooksDialogState extends ConsumerState<_SearchBooksDialog> {
                   itemCount: _results.length,
                   itemBuilder: (context, index) {
                     final libro = _results[index];
-                    return ListTile(
-                      leading: libro.copertinaUrl != null
-                          ? Image.network(
-                              libro.copertinaUrl!,
-                              width: 40,
-                              height: 60,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.menu_book);
-                              },
-                            )
-                          : const Icon(Icons.menu_book),
-                      title: Text(libro.titolo),
-                      subtitle: Text(libro.autore),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.bookmark_add_outlined),
-                        onPressed: () async {
-                          await widget.ref
-                              .read(bibliotecaProvider.notifier)
-                              .addToWishlist(libro);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${libro.titolo} aggiunto alla wishlist',
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: libro.copertinaUrl != null
+                              ? Image.network(
+                                  libro.copertinaUrl!,
+                                  width: 40,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) {
+                                    return Container(
+                                      width: 40,
+                                      height: 60,
+                                      color: theme.colorScheme.surfaceVariant,
+                                      child: const Icon(Icons.menu_book),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  width: 40,
+                                  height: 60,
+                                  color: theme.colorScheme.surfaceVariant,
+                                  child: const Icon(Icons.menu_book),
                                 ),
-                              ),
-                            );
-                          }
-                        },
-                        tooltip: 'Aggiungi alla wishlist',
+                        ),
+                        title: Text(
+                          libro.titolo,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(libro.autore),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.bookmark_add_outlined),
+                          color: theme.colorScheme.primary,
+                          onPressed: () async {
+                            await widget.ref
+                                .read(bibliotecaProvider.notifier)
+                                .addToWishlist(libro);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '${libro.titolo} aggiunto alla wishlist',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          tooltip: 'Aggiungi alla wishlist',
+                        ),
                       ),
                     );
                   },
