@@ -37,18 +37,18 @@ class SerieEsercizio {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'esercizioId': esercizioId,
-        'peso': peso,
-        'ripetizioni': ripetizioni,
-        'data': data.toIso8601String(),
-        'note': note,
-      };
+    'id': id,
+    'esercizioId': esercizioId,
+    'peso': peso,
+    'ripetizioni': ripetizioni,
+    'data': data.toIso8601String(),
+    'note': note,
+  };
 
   factory SerieEsercizio.fromJson(Map<String, dynamic> json) {
     return SerieEsercizio(
       id: json['id'],
-      esercizioId: json['esercizioId'],
+      esercizioId: json['esercizio_id'], // era 'esercizioId'
       peso: (json['peso'] as num).toDouble(),
       ripetizioni: json['ripetizioni'],
       data: DateTime.parse(json['data']),

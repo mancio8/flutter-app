@@ -207,3 +207,22 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
  export CHROME_EXECUTABLE=/run/current-system/sw/bin/google-chrome-stable
 
+ sudo chown -R vmancinelli:vmancinelli /home/vmancinelli/flutter-app
+
+ sudo chown -R vmancinelli:vmancinelli /home/vmancinelli/flutter-app
+
+ docker compose run --rm flutter
+
+ flutter doctor
+
+ flutter pub get
+
+ flutter run -d linux
+
+ flutter pub add google_fonts
+
+ rm -rf build .dart_tool
+flutter clean
+flutter pub get
+flutter run -d linux
+

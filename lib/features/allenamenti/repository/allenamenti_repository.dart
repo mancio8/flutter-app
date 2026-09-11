@@ -1,175 +1,62 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/models/esercizio.dart';
 import '../../../../core/models/serie_esercizio.dart';
 
 class AllenamentiRepository {
-  static const String _eserciziKey = 'allenamenti_esercizi';
-  static const String _serieKey = 'allenamenti_serie';
+  final SupabaseClient _client;
 
-  List<Esercizio> _esercizi = [];
-  List<SerieEsercizio> _serie = [];
+  AllenamentiRepository(this._client);
 
-  bool _eserciziLoaded = false;
-  bool _serieLoaded = false;
-
-  // ==================================================================
-  // LOAD ESERCIZI
-  // ==================================================================
-
-  Future<void> _loadEsercizi() async {
-    if (_eserciziLoaded) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_eserciziKey);
-
-    if (jsonString != null && jsonString.isNotEmpty) {
-      final List<dynamic> jsonList = json.decode(jsonString);
-
-      _esercizi = jsonList
-          .map(
-            (j) => Esercizio.fromJson(
-              Map<String, dynamic>.from(j as Map),
-            ),
-          )
-          .toList();
-    } else {
-      // Copia modificabile degli esercizi predefiniti
-      _esercizi = List<Esercizio>.from(
-        eserciziPredefiniti,
-      );
-
-      await _saveEsercizi();
-    }
-
-    _eserciziLoaded = true;
-  }
-
-  // ==================================================================
-  // SAVE ESERCIZI
-  // ==================================================================
-
-  Future<void> _saveEsercizi() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final jsonString = json.encode(
-      _esercizi
-          .map((e) => e.toJson())
-          .toList(),
-    );
-
-    await prefs.setString(
-      _eserciziKey,
-      jsonString,
-    );
-  }
-
-  // ==================================================================
-  // LOAD SERIE
-  // ==================================================================
-
-  Future<void> _loadSerie() async {
-    if (_serieLoaded) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_serieKey);
-
-    if (jsonString != null && jsonString.isNotEmpty) {
-      final List<dynamic> jsonList = json.decode(jsonString);
-
-      _serie = jsonList
-          .map(
-            (j) => SerieEsercizio.fromJson(
-              Map<String, dynamic>.from(j as Map),
-            ),
-          )
-          .toList();
-    } else {
-      _serie = [];
-    }
-
-    _serieLoaded = true;
-  }
-
-  // ==================================================================
-  // SAVE SERIE
-  // ==================================================================
-
-  Future<void> _saveSerie() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final jsonString = json.encode(
-      _serie
-          .map((s) => s.toJson())
-          .toList(),
-    );
-
-    await prefs.setString(
-      _serieKey,
-      jsonString,
-    );
-  }
+  String get _userId => _client.auth.currentUser?.id ?? '';
 
   // ==================================================================
   // ESERCIZI
   // ==================================================================
 
   Future<List<Esercizio>> getEsercizi() async {
-    await _loadEsercizi();
+    if (_userId.isEmpty) return [];
 
-    // Restituiamo una COPIA modificabile.
-    //
-    // In questo modo il provider può fare:
-    //
-    // esercizi.sort(...)
-    //
-    // senza generare:
-    //
-    // Unsupported operation
-    //
-    return List<Esercizio>.from(
-      _esercizi,
-    );
+    final response = await _client
+        .from('esercizi')
+        .select()
+        .eq('user_id', _userId)
+        .order('nome');
+
+    final esercizi = (response as List)
+        .map<Esercizio>((json) => Esercizio.fromJson(json))
+        .toList();
+
+    // Se l'utente non ha ancora nessun esercizio, precarica quelli predefiniti
+    if (esercizi.isEmpty) {
+      await _inserisciPredefiniti();
+      return getEsercizi(); // richiama se stesso, ora troverà i dati appena inseriti
+    }
+
+    return esercizi;
   }
 
-  // ------------------------------------------------------------------
-  // ADD ESERCIZIO
-  // ------------------------------------------------------------------
+  Future<void> _inserisciPredefiniti() async {
+    final batch = eserciziPredefiniti.map((e) => {
+      'nome': e.nome,
+      'categoria': e.categoria.name,
+      'user_id': _userId,
+    }).toList();
 
-  Future<void> addEsercizio(
-    Esercizio esercizio,
-  ) async {
-    await _loadEsercizi();
-
-    _esercizi.add(esercizio);
-
-    await _saveEsercizi();
+    await _client.from('esercizi').insert(batch);
   }
 
-  // ------------------------------------------------------------------
-  // DELETE ESERCIZIO
-  // ------------------------------------------------------------------
+  Future<void> addEsercizio(Esercizio esercizio) async {
+    await _client.from('esercizi').insert({
+      'nome': esercizio.nome,
+      'categoria': esercizio.categoria.name,
+      'user_id': _userId,
+    });
+  }
 
-  Future<void> deleteEsercizio(
-    String id,
-  ) async {
-    await _loadEsercizi();
-    await _loadSerie();
-
-    _esercizi.removeWhere(
-      (e) => e.id == id,
-    );
-
-    // Elimina anche tutte le serie
-    // associate all'esercizio.
-    _serie.removeWhere(
-      (s) => s.esercizioId == id,
-    );
-
-    await _saveEsercizi();
-    await _saveSerie();
+  Future<void> deleteEsercizio(String id) async {
+    // Le serie collegate vengono cancellate automaticamente
+    // grazie a ON DELETE CASCADE nello schema SQL
+    await _client.from('esercizi').delete().eq('id', id);
   }
 
   // ==================================================================
@@ -177,79 +64,45 @@ class AllenamentiRepository {
   // ==================================================================
 
   Future<List<SerieEsercizio>> getSerie() async {
-    await _loadSerie();
+    if (_userId.isEmpty) return [];
 
-    // Anche qui restituiamo una copia modificabile.
-    return List<SerieEsercizio>.from(
-      _serie,
-    );
-  }
+    final response = await _client
+        .from('serie_esercizio')
+        .select()
+        .eq('user_id', _userId)
+        .order('data');
 
-  // ------------------------------------------------------------------
-  // SERIE PER ESERCIZIO
-  // ------------------------------------------------------------------
-
-  Future<List<SerieEsercizio>> getSeriePerEsercizio(
-    String esercizioId,
-  ) async {
-    final tutte = await getSerie();
-
-    return tutte
-        .where(
-          (s) => s.esercizioId == esercizioId,
-        )
+    return (response as List)
+        .map<SerieEsercizio>((json) => SerieEsercizio.fromJson(json))
         .toList();
   }
 
-  // ------------------------------------------------------------------
-  // ADD SERIE
-  // ------------------------------------------------------------------
-
-  Future<void> addSerie(
-    SerieEsercizio serie,
-  ) async {
-    await _loadSerie();
-
-    _serie.add(serie);
-
-    await _saveSerie();
+  Future<List<SerieEsercizio>> getSeriePerEsercizio(String esercizioId) async {
+    final tutte = await getSerie();
+    return tutte.where((s) => s.esercizioId == esercizioId).toList();
   }
 
-  // ------------------------------------------------------------------
-  // UPDATE SERIE
-  // ------------------------------------------------------------------
-
-  Future<void> updateSerie(
-    SerieEsercizio serie,
-  ) async {
-    await _loadSerie();
-
-    final index = _serie.indexWhere(
-      (s) => s.id == serie.id,
-    );
-
-    if (index == -1) {
-      return;
-    }
-
-    _serie[index] = serie;
-
-    await _saveSerie();
+  Future<void> addSerie(SerieEsercizio serie) async {
+    await _client.from('serie_esercizio').insert({
+      'esercizio_id': serie.esercizioId,
+      'peso': serie.peso,
+      'ripetizioni': serie.ripetizioni,
+      'data': serie.data.toIso8601String().split('T')[0],
+      'note': serie.note,
+      'user_id': _userId,
+    });
   }
 
-  // ------------------------------------------------------------------
-  // DELETE SERIE
-  // ------------------------------------------------------------------
+  Future<void> updateSerie(SerieEsercizio serie) async {
+    await _client.from('serie_esercizio').update({
+      'peso': serie.peso,
+      'ripetizioni': serie.ripetizioni,
+      'data': serie.data.toIso8601String().split('T')[0],
+      'note': serie.note,
+    }).eq('id', serie.id);
+  }
 
-  Future<void> deleteSerie(
-    String id,
-  ) async {
-    await _loadSerie();
-
-    _serie.removeWhere(
-      (s) => s.id == id,
-    );
-
-    await _saveSerie();
+  Future<void> deleteSerie(String id) async {
+    await _client.from('serie_esercizio').delete().eq('id', id);
   }
 }

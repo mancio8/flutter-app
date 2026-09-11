@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
-import '../models/notification.dart';
+
 
 
 class MockApiService {
@@ -10,7 +10,6 @@ class MockApiService {
   
   // Mock data storage
   final List<User> _users = [];
-  final List<AppNotification> _notifications = [];
   
   MockApiService() {
     _initializeMockData();
@@ -30,19 +29,6 @@ class MockApiService {
         department: _getRandomDepartment(),
         phone: '+1 555-${_random.nextInt(900) + 100}-${_random.nextInt(9000) + 1000}',
         lastLogin: DateTime.now().subtract(Duration(hours: _random.nextInt(72))),
-      ));
-    }
-    
-    // Generate mock notifications
-    for (int i = 1; i <= 20; i++) {
-      _notifications.add(AppNotification(
-        id: 'notif_$i',
-        title: _getRandomNotificationTitle(),
-        message: _getRandomNotificationMessage(),
-        type: NotificationType.values[_random.nextInt(NotificationType.values.length)],
-        createdAt: DateTime.now().subtract(Duration(hours: _random.nextInt(168))),
-        isRead: _random.nextBool(),
-        actionUrl: _random.nextBool() ? '/users/user_${_random.nextInt(50) + 1}' : null,
       ));
     }
   }
@@ -87,33 +73,7 @@ class MockApiService {
     await _simulateNetworkDelay();
     _users.removeWhere((user) => user.id == id);
   }
-  
-  // Notification endpoints
-  Future<List<AppNotification>> getNotifications({bool unreadOnly = false}) async {
-    await _simulateNetworkDelay();
-    if (unreadOnly) {
-      return _notifications.where((n) => !n.isRead).toList();
-    }
-    return List.from(_notifications);
-  }
-  
-  Future<void> markNotificationAsRead(String id) async {
-    await _simulateNetworkDelay();
-    final index = _notifications.indexWhere((n) => n.id == id);
-    if (index != -1) {
-      _notifications[index] = _notifications[index].copyWith(isRead: true);
-    }
-  }
-  
-  Future<void> markAllNotificationsAsRead() async {
-    await _simulateNetworkDelay();
-    for (int i = 0; i < _notifications.length; i++) {
-      _notifications[i] = _notifications[i].copyWith(isRead: true);
-    }
-  }
-  
-   
-    
+      
   
   // Search functionality
   Future<List<User>> searchUsers(String query) async {
@@ -155,33 +115,6 @@ class MockApiService {
     return departments[_random.nextInt(departments.length)];
   }
   
-  String _getRandomNotificationTitle() {
-    final titles = [
-      'New user registered',
-      'System update completed',
-      'Monthly report available',
-      'Security alert',
-      'Payment received',
-      'Task completed',
-      'Meeting reminder',
-      'New message',
-    ];
-    return titles[_random.nextInt(titles.length)];
-  }
-  
-  String _getRandomNotificationMessage() {
-    final messages = [
-      'A new user has joined your organization.',
-      'System has been successfully updated to the latest version.',
-      'Your monthly analytics report is ready for review.',
-      'Unusual login activity detected from a new location.',
-      'Payment of \$1,250 has been processed successfully.',
-      'Your assigned task has been marked as complete.',
-      'You have a meeting scheduled in 30 minutes.',
-      'You have received a new message in your inbox.',
-    ];
-    return messages[_random.nextInt(messages.length)];
-  }
   
   String _getRandomActivity() {
     final activities = [

@@ -8,7 +8,6 @@ import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/users/presentation/pages/users_page.dart';
 import '../../features/users/presentation/pages/user_detail_page.dart';
-import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/home/presentation/pages/ui_showcase_page.dart';
@@ -110,10 +109,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
-          ),
-          GoRoute(
-            path: '/notifications',
-            builder: (context, state) => const NotificationsPage(),
           ),
           // Nella lista delle routes
           GoRoute(

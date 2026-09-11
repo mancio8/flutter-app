@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/models/esercizio.dart';
 import '../../../core/models/serie_esercizio.dart';
 import '../repository/allenamenti_repository.dart';
+import '../../../core/providers/supabase_provider.dart';
 
-final allenamentiRepositoryProvider =
-    Provider<AllenamentiRepository>((ref) {
-  return AllenamentiRepository();
+final allenamentiRepositoryProvider = Provider<AllenamentiRepository>((ref) {
+  final supabase = ref.watch(supabaseProvider); // era: AllenamentiRepository()
+  return AllenamentiRepository(supabase);
 });
 
 // ======================================================================
