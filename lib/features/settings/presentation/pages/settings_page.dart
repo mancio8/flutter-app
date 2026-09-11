@@ -1,4 +1,3 @@
-// File: lib/features/settings/presentation/pages/settings_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/theme_provider.dart';
@@ -18,7 +17,7 @@ class SettingsPage extends ConsumerWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           // ============================================================
-          // APP BAR coerente con le altre pagine
+          // APP BAR
           // ============================================================
           SliverAppBar(
             expandedHeight: 120,
@@ -27,10 +26,16 @@ class SettingsPage extends ConsumerWidget {
             backgroundColor: theme.colorScheme.primaryContainer,
             foregroundColor: theme.colorScheme.onPrimaryContainer,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+              titlePadding: const EdgeInsets.only(
+                left: 16,
+                bottom: 16,
+              ),
               title: Row(
                 children: [
-                  const Icon(Icons.settings, size: 28),
+                  const Icon(
+                    Icons.settings,
+                    size: 28,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     AppLocalizations.of(context).settings,
@@ -98,7 +103,9 @@ class SettingsPage extends ConsumerWidget {
                   ),
                   value: themeState.themeMode == ThemeMode.dark,
                   onChanged: (value) {
-                    ref.read(themeNotifierProvider.notifier).setThemeMode(
+                    ref
+                        .read(themeNotifierProvider.notifier)
+                        .setThemeMode(
                           value ? ThemeMode.dark : ThemeMode.light,
                         );
                   },
@@ -151,6 +158,7 @@ class SettingsPage extends ConsumerWidget {
               theme: theme,
               children: ColorSeed.values.map((seed) {
                 final isSelected = seed == themeState.colorSeed;
+
                 return ListTile(
                   leading: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -252,8 +260,12 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
 
-          // Padding finale
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          // ============================================================
+          // PADDING FINALE
+          // ============================================================
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 32),
+          ),
         ],
       ),
     );
@@ -271,7 +283,9 @@ class SettingsPage extends ConsumerWidget {
             borderRadius: BorderRadius.circular(24),
           ),
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
+            constraints: const BoxConstraints(
+              maxWidth: 400,
+            ),
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -300,6 +314,7 @@ class SettingsPage extends ConsumerWidget {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 24),
 
                 // Nome app + versione
@@ -333,6 +348,7 @@ class SettingsPage extends ConsumerWidget {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 20),
 
                 // Legalese
@@ -351,6 +367,7 @@ class SettingsPage extends ConsumerWidget {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
 
                 // Features
@@ -358,6 +375,7 @@ class SettingsPage extends ConsumerWidget {
                   l10n.starterFeatures,
                   style: theme.textTheme.bodyMedium,
                 ),
+
                 const SizedBox(height: 24),
 
                 // Chiudi
@@ -368,7 +386,9 @@ class SettingsPage extends ConsumerWidget {
                       Navigator.of(dialogContext).pop();
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -386,7 +406,7 @@ class SettingsPage extends ConsumerWidget {
 }
 
 // ======================================================================
-// SECTION HEADER con barretta laterale (coerente con le altre pagine)
+// SECTION HEADER
 // ======================================================================
 
 class _SectionHeader extends StatelessWidget {
@@ -403,7 +423,12 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        24,
+        16,
+        12,
+      ),
       child: Row(
         children: [
           Container(
@@ -415,7 +440,11 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Icon(icon, size: 20, color: theme.colorScheme.primary),
+          Icon(
+            icon,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
           const SizedBox(width: 8),
           Text(
             title,
@@ -430,7 +459,7 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ======================================================================
-// SETTINGS GROUP — card con ombra che raggruppa le opzioni
+// SETTINGS GROUP
 // ======================================================================
 
 class _SettingsGroup extends StatelessWidget {
@@ -444,21 +473,14 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Material(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        elevation: 2,
+        shadowColor: Colors.black.withOpacity(0.05),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             for (int i = 0; i < children.length; i++) ...[
@@ -480,7 +502,7 @@ class _SettingsGroup extends StatelessWidget {
 }
 
 // ======================================================================
-// LEADING ICON — icona in box colorato
+// LEADING ICON
 // ======================================================================
 
 class _LeadingIcon extends StatelessWidget {

@@ -1,0 +1,34 @@
+services:
+  flutter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: flutter-app
+
+    working_dir: /app
+
+    environment:
+      DISPLAY: ${DISPLAY}
+      LIBGL_ALWAYS_SOFTWARE: "1"
+
+    volumes:
+      # Codice sorgente
+      - .:/app
+
+      # Cache Flutter/Pub persistente
+      - flutter_pub_cache:/root/.pub-cache
+
+      # Accesso al display X11
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+    devices:
+      - /dev/dri:/dev/dri
+
+    network_mode: host
+
+    stdin_open: true
+    tty: true
+
+volumes:
+  flutter_pub_cache:

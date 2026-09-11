@@ -1,0 +1,10 @@
+.dart_tool
+.build
+build
+.git
+.idea
+.vscode
+android/.gradle
+android/build
+ios/Pods
+linux/flutter/ephemeral
