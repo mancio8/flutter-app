@@ -168,6 +168,12 @@ class HomePage extends StatelessWidget {
                         color: const Color.fromARGB(255, 228, 15, 210),
                         onTap: () => context.go('/wishlist'),
                       ),
+                      _AppTile(
+                        icon: Icons.card_travel,
+                        label: 'Viaggi',
+                        color: Colors.blueAccent,
+                        onTap: () => context.go('/viaggi-wishlist'),
+                      ),
                     ],
                   ).animate().fadeIn(delay: 300.ms),
 
