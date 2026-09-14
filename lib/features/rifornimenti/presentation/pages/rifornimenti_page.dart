@@ -115,24 +115,52 @@ class RifornimentiPage extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                child: Column(
                   children: [
-                    _StatItem(
-                      label: 'Totale Speso',
-                      value: '€${stats.totaleSpeso.toStringAsFixed(2)}',
-                      icon: Icons.euro,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _StatItem(
+                          label: 'Totale Speso',
+                          value: '€${stats.totaleSpeso.toStringAsFixed(2)}',
+                          icon: Icons.euro,
+                        ),
+                        _StatItem(
+                          label: 'Totale Litri',
+                          value: '${stats.totaleLitri.toStringAsFixed(1)}L',
+                          icon: Icons.local_gas_station,
+                        ),
+                      ],
                     ),
-                    _StatItem(
-                      label: 'Totale Litri',
-                      value: '${stats.totaleLitri.toStringAsFixed(1)}L',
-                      icon: Icons.local_gas_station,
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _StatItem(
+                          label: 'Prezzo Medio',
+                          value: '€${stats.prezzoMedio.toStringAsFixed(3)}/L',
+                          icon: Icons.trending_up,
+                        ),
+                        _StatItem(
+                          label: 'Consumo Medio',
+                          value: stats.consumoMedio > 0
+                              ? '${stats.consumoMedio.toStringAsFixed(1)} km/L'
+                              : 'N/D',
+                          icon: Icons.speed,
+                        ),
+                      ],
                     ),
-                    _StatItem(
-                      label: 'Prezzo Medio',
-                      value: '€${stats.prezzoMedio.toStringAsFixed(3)}/L',
-                      icon: Icons.trending_up,
-                    ),
+                    // Avviso se manca il chilometraggio per calcolare il consumo
+                    if (stats.consumoMedio == 0) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        'Inserisci il chilometraggio in almeno 2 rifornimenti dello stesso veicolo per vedere il consumo medio',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -176,10 +204,7 @@ class RifornimentiPage extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text(
                         '$e',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -207,23 +232,20 @@ class RifornimentiPage extends ConsumerWidget {
                 return SliverPadding(
                   padding: const EdgeInsets.all(16),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final rifornimento = rifornimenti[index];
-                        return RifornimentoCard(
-                          rifornimento: rifornimento,
-                          onDelete: () {
-                            ref
-                                .read(rifornimentiProvider.notifier)
-                                .deleteRifornimento(rifornimento.id);
-                          },
-                          onEdit: () {
-                            _showEditDialog(context, ref, rifornimento);
-                          },
-                        );
-                      },
-                      childCount: rifornimenti.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final rifornimento = rifornimenti[index];
+                      return RifornimentoCard(
+                        rifornimento: rifornimento,
+                        onDelete: () {
+                          ref
+                              .read(rifornimentiProvider.notifier)
+                              .deleteRifornimento(rifornimento.id);
+                        },
+                        onEdit: () {
+                          _showEditDialog(context, ref, rifornimento);
+                        },
+                      );
+                    }, childCount: rifornimenti.length),
                   ),
                 );
               },
@@ -378,10 +400,8 @@ class _VeicoloSelector extends StatelessWidget {
         padding: EdgeInsets.all(16),
         child: LinearProgressIndicator(),
       ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text('Errore: $e'),
-      ),
+      error: (e, _) =>
+          Padding(padding: const EdgeInsets.all(16), child: Text('Errore: $e')),
       data: (veicoli) {
         return Container(
           margin: const EdgeInsets.all(16),
@@ -624,7 +644,9 @@ class _AddRifornimentoDialogState
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      isEditing ? 'Modifica Rifornimento' : 'Nuovo Rifornimento',
+                      isEditing
+                          ? 'Modifica Rifornimento'
+                          : 'Nuovo Rifornimento',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -741,9 +763,7 @@ class _AddRifornimentoDialogState
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
-                      '${_data.day}/${_data.month}/${_data.year}',
-                    ),
+                    child: Text('${_data.day}/${_data.month}/${_data.year}'),
                   ),
                 ),
                 const SizedBox(height: 16),

@@ -226,3 +226,26 @@ flutter clean
 flutter pub get
 flutter run -d linux
 
+
+
+su nix 
+
+nix-shell -p xorg.xhost
+
+xhost +local:
+
+
+flutter build linux --release
+
+
+Poi sul NixOS:
+
+nix profile add path:.
+
+Se hai già installato la vecchia versione, prima:
+
+nix profile remove flutter-starter-app
+
+e poi:
+
+nix profile add path:.

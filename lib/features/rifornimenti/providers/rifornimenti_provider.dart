@@ -150,31 +150,75 @@ final rifornimentiStatsProvider = Provider<RifornimentiStats>((ref) {
         0,
         (sum, r) => sum + r.litri,
       );
-      final prezzoMedio = totaleLitri > 0
-          ? (totaleSpeso / totaleLitri).toDouble()
-          : 0.0;
+      final prezzoMedio = totaleLitri > 0 ? (totaleSpeso / totaleLitri) : 0.0;
+      final consumoMedio = _calcolaConsumoMedio(rifornimenti);
 
       return RifornimentiStats(
         totaleSpeso: totaleSpeso,
         totaleLitri: totaleLitri,
         prezzoMedio: prezzoMedio,
+        consumoMedio: consumoMedio,
       );
     },
-    loading: () =>
-        const RifornimentiStats(totaleSpeso: 0, totaleLitri: 0, prezzoMedio: 0),
-    error: (_, __) =>
-        const RifornimentiStats(totaleSpeso: 0, totaleLitri: 0, prezzoMedio: 0),
+    loading: () => const RifornimentiStats(
+      totaleSpeso: 0,
+      totaleLitri: 0,
+      prezzoMedio: 0,
+      consumoMedio: 0,
+    ),
+    error: (_, __) => const RifornimentiStats(
+      totaleSpeso: 0,
+      totaleLitri: 0,
+      prezzoMedio: 0,
+      consumoMedio: 0,
+    ),
   );
 });
+
+// Calcola il consumo medio (km/L) confrontando rifornimenti consecutivi
+// dello STESSO veicolo, basandosi sul chilometraggio registrato.
+double _calcolaConsumoMedio(List<Rifornimento> rifornimenti) {
+  // Raggruppa per veicolo: il confronto tra chilometraggi ha senso
+  // solo all'interno dello stesso veicolo
+  final Map<String?, List<Rifornimento>> perVeicolo = {};
+  for (final r in rifornimenti) {
+    if (r.chilometraggio == null) continue; // serve il km per calcolare
+    perVeicolo.putIfAbsent(r.veicoloId, () => []).add(r);
+  }
+
+  final List<double> consumiSingoli = [];
+
+  for (final lista in perVeicolo.values) {
+    if (lista.length < 2) continue; // servono almeno 2 rifornimenti con km
+
+    final ordinata = List<Rifornimento>.from(lista)
+      ..sort((a, b) => a.chilometraggio!.compareTo(b.chilometraggio!));
+
+    for (var i = 1; i < ordinata.length; i++) {
+      final kmPercorsi =
+          ordinata[i].chilometraggio! - ordinata[i - 1].chilometraggio!;
+      final litriUsati = ordinata[i].litri;
+
+      if (kmPercorsi > 0 && litriUsati > 0) {
+        consumiSingoli.add(kmPercorsi / litriUsati);
+      }
+    }
+  }
+
+  if (consumiSingoli.isEmpty) return 0.0;
+  return consumiSingoli.reduce((a, b) => a + b) / consumiSingoli.length;
+}
 
 class RifornimentiStats {
   final double totaleSpeso;
   final double totaleLitri;
   final double prezzoMedio;
+  final double consumoMedio; // km/L
 
   const RifornimentiStats({
     required this.totaleSpeso,
     required this.totaleLitri,
     required this.prezzoMedio,
+    required this.consumoMedio,
   });
 }
