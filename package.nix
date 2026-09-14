@@ -38,5 +38,18 @@ pkgs.stdenv.mkDerivation {
     mkdir -p $out/bin
     ln -s $out/lib/flutter-starter/flutter_starter \
       $out/bin/flutter-starter
+
+    mkdir -p $out/share/applications
+
+    cat > $out/share/applications/flutter-starter.desktop <<EOF
+[Desktop Entry]
+Name=Flutter Starter
+Comment=La mia applicazione Flutter
+Exec=flutter-starter
+Terminal=false
+Type=Application
+Categories=Utility;
+StartupNotify=true
+EOF
   '';
 }
