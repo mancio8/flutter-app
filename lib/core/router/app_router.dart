@@ -26,7 +26,7 @@ import '../../features/habits/presentation/pages/habits_page.dart';
 import '../../features/veicoli/presentation/pages/gestione_veicolo_page.dart'; // NUOVO IMPORT
 import '../../features/veicoli/presentation/pages/veicoli_page.dart';
 import '../../features/allenamenti/presentation/pages/allenamenti_page.dart';
-import '../../features/viaggi/presentation/pages/wishlist_viaggi_page.dart'; // NUOVO IMPORT
+import '../../features/viaggi/presentation/pages/viaggi_page.dart'; // NUOVO IMPORT
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
   // This will be updated when onboarding is completed
@@ -154,8 +154,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const HabitsPage(),
           ),
           GoRoute(
-            path: '/viaggi-wishlist',
-            builder: (context, state) => const WishlistViaggiPage(),
+            path: '/viaggi',
+            builder: (context, state) => const ViaggiPage(),
           ),
           GoRoute(
             path: '/allenamenti',

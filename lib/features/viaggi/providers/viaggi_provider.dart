@@ -59,10 +59,19 @@ class ViaggiNotifier extends AsyncNotifier<List<Viaggio>> {
     ref.invalidate(wishlistViaggiProvider);
   }
 
-  Future<void> moveToVisitato(Viaggio viaggio, DateTime dataVisita, {int? rating}) async {
+  Future<void> moveToVisitato(
+    Viaggio viaggio,
+    DateTime dataVisita, {
+    int? rating,
+  }) async {
     final repository = ref.read(viaggiRepositoryProvider);
     await repository.moveToVisitato(viaggio, dataVisita, rating: rating);
-    await _reload();
+
+    // ✅ Ricarica viaggi fatti
+    ref.invalidateSelf();
+    await future;
+
+    // ✅ Ricarica wishlist
     ref.invalidate(wishlistViaggiProvider);
   }
 

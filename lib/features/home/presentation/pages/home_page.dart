@@ -172,7 +172,7 @@ class HomePage extends StatelessWidget {
                         icon: Icons.card_travel,
                         label: 'Viaggi',
                         color: Colors.blueAccent,
-                        onTap: () => context.go('/viaggi-wishlist'),
+                        onTap: () => context.go('/viaggi'),
                       ),
                     ],
                   ).animate().fadeIn(delay: 300.ms),
