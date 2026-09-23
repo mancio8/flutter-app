@@ -174,6 +174,12 @@ class HomePage extends StatelessWidget {
                         color: Colors.blueAccent,
                         onTap: () => context.go('/viaggi'),
                       ),
+                      _AppTile(
+                        icon: Icons.sports_soccer,
+                        label: 'Girone C',
+                        color: Colors.green[700]!,
+                        onTap: () => context.go('/girone-c'),
+                      ),
                     ],
                   ).animate().fadeIn(delay: 300.ms),
 

@@ -27,6 +27,7 @@ import '../../features/veicoli/presentation/pages/gestione_veicolo_page.dart'; /
 import '../../features/veicoli/presentation/pages/veicoli_page.dart';
 import '../../features/allenamenti/presentation/pages/allenamenti_page.dart';
 import '../../features/viaggi/presentation/pages/viaggi_page.dart'; // NUOVO IMPORT
+import '../../features/girone/presentation/pages/girone_page.dart';
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
   // This will be updated when onboarding is completed
@@ -180,6 +181,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 nomeVeicolo: nome,
               );
             },
+          ),
+          GoRoute(
+            path: '/girone-c',
+            builder: (context, state) => const GironePage(),
           ),
         ],
       ),
