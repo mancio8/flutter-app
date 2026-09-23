@@ -242,7 +242,9 @@ docker compose run --rm flutter
 Oppure, per avviare i servizi definiti nel `docker-compose.yml`:
 
 ```bash
-docker compose up
+docker compose up -d
+
+docker compose exec flutter bash
 ```
 
 ---

@@ -1,4 +1,6 @@
+// File: lib/shared/widgets/responsive_scaffold.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -25,6 +27,10 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold>
   late final Animation<double> _barAnimation;
 
   bool showLargeSizeLayout = false;
+
+  // Per il doppio tap "esci" — statico per sopravvivere ai rebuild
+  static DateTime? _lastBackPress;
+  static const Duration _doubleBackDuration = Duration(seconds: 2);
 
   @override
   void initState() {
@@ -86,48 +92,88 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold>
     }
   }
 
+  // ============================================================
+  // GESTIONE BACK
+  // ============================================================
+
+  /// Chiamato SOLO quando canPop era false (cioè siamo in home).
+  /// Il back dalle altre pagine è gestito da GoRouter (torna alla home).
+  void _handleBack() {
+    final now = DateTime.now();
+
+    // Primo tap → snackbar
+    if (_lastBackPress == null ||
+        now.difference(_lastBackPress!) > _doubleBackDuration) {
+      _lastBackPress = now;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Premi indietro di nuovo per uscire'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+
+    // Secondo tap entro 2 secondi → esci
+    _lastBackPress = null;
+    SystemNavigator.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentRoute = GoRouterState.of(context).matchedLocation;
+    final isHome = currentRoute == '/home';
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final isDesktopLayout = _controller.value > 0;
-
-        return Scaffold(
-          body: Row(
-            children: [
-              if (isDesktopLayout)
-                _AnimatedNavigationRail(
-                  animation: _railAnimation,
-                  extended: showLargeSizeLayout,
-                  currentRoute: currentRoute,
-                ),
-
-              if (isDesktopLayout)
-                const VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                ),
-
-              Expanded(
-                child: widget.child,
-              ),
-            ],
-          ),
-
-          // Mobile / compact layout
-          bottomNavigationBar: _AnimatedNavigationBar(
-            animation: _barAnimation,
-            currentRoute: currentRoute,
-          ),
-        );
+    return PopScope(
+      // canPop: false → blocca il back di sistema quando siamo in home
+      // canPop: true  → lascia che GoRouter gestisca il back dalle altre pagine
+      canPop: !isHome,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        // Arriva qui solo se canPop era false, cioè siamo in home
+        _handleBack();
       },
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          final isDesktopLayout = _controller.value > 0;
+
+          return Scaffold(
+            body: Row(
+              children: [
+                if (isDesktopLayout)
+                  _AnimatedNavigationRail(
+                    animation: _railAnimation,
+                    extended: showLargeSizeLayout,
+                    currentRoute: currentRoute,
+                  ),
+
+                if (isDesktopLayout)
+                  const VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                  ),
+
+                Expanded(
+                  child: widget.child,
+                ),
+              ],
+            ),
+
+            bottomNavigationBar: _AnimatedNavigationBar(
+              animation: _barAnimation,
+              currentRoute: currentRoute,
+            ),
+          );
+        },
+      ),
     );
   }
 }
-
 
 // ============================================================
 // NAVIGATION RAIL - TABLET / DESKTOP
@@ -155,22 +201,15 @@ class _AnimatedNavigationRail extends StatelessWidget {
           axisAlignment: -1,
           child: NavigationRail(
             extended: extended,
-
-            // Material 3
             useIndicator: true,
             indicatorShape: const StadiumBorder(),
-
-            // When collapsed, show labels only when selected.
             labelType: extended
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.selected,
-
             selectedIndex: _getSelectedIndex(currentRoute),
-
             onDestinationSelected: (index) {
               _onItemTapped(context, index);
             },
-
             destinations: _buildDestinations(context),
           ),
         );
@@ -189,25 +228,21 @@ class _AnimatedNavigationRail extends StatelessWidget {
         selectedIcon: const Icon(Icons.home),
         label: Text(l10n.home),
       ),
-
       NavigationRailDestination(
         icon: const Icon(Icons.dashboard_outlined),
         selectedIcon: const Icon(Icons.dashboard),
         label: Text(l10n.dashboard),
       ),
-
       NavigationRailDestination(
         icon: const Icon(Icons.local_gas_station_outlined),
         selectedIcon: const Icon(Icons.local_gas_station),
         label: const Text('Fuel'),
       ),
-
       NavigationRailDestination(
         icon: const Icon(Icons.menu_book_outlined),
         selectedIcon: const Icon(Icons.menu_book),
         label: const Text('Biblioteca'),
       ),
-
       NavigationRailDestination(
         icon: const Icon(Icons.settings_outlined),
         selectedIcon: const Icon(Icons.settings),
@@ -222,54 +257,33 @@ class _AnimatedNavigationRail extends StatelessWidget {
         route.startsWith('/forms')) {
       return 0;
     }
-
-    if (route.startsWith('/dashboard')) {
-      return 1;
-    }
-
-    if (route.startsWith('/rifornimenti')) {
-      return 2;
-    }
-
-    if (route.startsWith('/biblioteca')) {
-      return 3;
-    }
-
-    if (route.startsWith('/settings')) {
-      return 4;
-    }
-
+    if (route.startsWith('/dashboard')) return 1;
+    if (route.startsWith('/rifornimenti')) return 2;
+    if (route.startsWith('/biblioteca')) return 3;
+    if (route.startsWith('/settings')) return 4;
     return 0;
   }
 
-  void _onItemTapped(
-    BuildContext context,
-    int index,
-  ) {
+  void _onItemTapped(BuildContext context, int index) {
     switch (index) {
       case 0:
         context.go('/home');
         break;
-
       case 1:
         context.go('/dashboard');
         break;
-
       case 2:
         context.go('/rifornimenti');
         break;
-
       case 3:
         context.go('/biblioteca');
         break;
-
       case 4:
         context.go('/settings');
         break;
     }
   }
 }
-
 
 // ============================================================
 // NAVIGATION BAR - MOBILE
@@ -293,13 +307,10 @@ class _AnimatedNavigationBar extends StatelessWidget {
           sizeFactor: animation,
           axisAlignment: 1,
           child: NavigationBar(
-            // Material 3
             selectedIndex: _getSelectedIndex(currentRoute),
-
             onDestinationSelected: (index) {
               _onItemTapped(context, index);
             },
-
             destinations: _buildDestinations(context),
           ),
         );
@@ -318,19 +329,16 @@ class _AnimatedNavigationBar extends StatelessWidget {
         selectedIcon: const Icon(Icons.home),
         label: l10n.home,
       ),
-
       NavigationDestination(
         icon: const Icon(Icons.dashboard_outlined),
         selectedIcon: const Icon(Icons.dashboard),
         label: l10n.dashboard,
       ),
-
       NavigationDestination(
         icon: const Icon(Icons.local_gas_station_outlined),
         selectedIcon: const Icon(Icons.local_gas_station),
         label: 'Fuel',
       ),
-
       NavigationDestination(
         icon: const Icon(Icons.settings_outlined),
         selectedIcon: const Icon(Icons.settings),
@@ -345,45 +353,26 @@ class _AnimatedNavigationBar extends StatelessWidget {
         route.startsWith('/forms')) {
       return 0;
     }
-
-    if (route.startsWith('/dashboard')) {
-      return 1;
-    }
-
-    if (route.startsWith('/rifornimenti')) {
-      return 2;
-    }
-
-    if (route.startsWith('/settings')) {
-      return 3;
-    }
-
-    // Biblioteca non è presente nella NavigationBar mobile.
-    // Evitiamo quindi un indice fuori range.
+    if (route.startsWith('/dashboard')) return 1;
+    if (route.startsWith('/rifornimenti')) return 2;
+    if (route.startsWith('/settings')) return 3;
     return 0;
   }
 
-  void _onItemTapped(
-    BuildContext context,
-    int index,
-  ) {
+  void _onItemTapped(BuildContext context, int index) {
     switch (index) {
       case 0:
         context.go('/home');
         break;
-
       case 1:
         context.go('/dashboard');
         break;
-
       case 2:
         context.go('/rifornimenti');
         break;
-
       case 3:
         context.go('/settings');
         break;
     }
   }
 }
-

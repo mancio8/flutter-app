@@ -16,8 +16,14 @@ services:
       # Codice sorgente
       - .:/app
 
-      # Cache Flutter/Pub persistente
+      # Cache Pub persistente
       - flutter_pub_cache:/root/.pub-cache
+
+      # .dart_tool separato dal sistema NixOS
+      - flutter_dart_tool:/app/.dart_tool
+
+      # Build Linux separata dal sistema NixOS
+      - flutter_build:/app/build
 
       # Accesso al display X11
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
@@ -32,3 +38,5 @@ services:
 
 volumes:
   flutter_pub_cache:
+  flutter_dart_tool:
+  flutter_build:

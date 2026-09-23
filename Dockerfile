@@ -20,8 +20,4 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY pubspec.yaml pubspec.lock ./
-
-RUN flutter pub get
-
 CMD ["bash"]
