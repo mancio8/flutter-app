@@ -205,47 +205,245 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - The Flutter community for inspiration and packages
 
 
- export CHROME_EXECUTABLE=/run/current-system/sw/bin/google-chrome-stable
+# 🛠️ Sviluppo, Build e Installazione
 
- sudo chown -R vmancinelli:vmancinelli /home/vmancinelli/flutter-app
+## 1. Configurazione iniziale
 
- sudo chown -R vmancinelli:vmancinelli /home/vmancinelli/flutter-app
+Impostare Chrome come browser utilizzato da Flutter:
 
- docker compose run --rm flutter
+```bash
+export CHROME_EXECUTABLE=/run/current-system/sw/bin/google-chrome-stable
+```
 
- flutter doctor
+Se il progetto è stato modificato tramite Docker e i file risultano di proprietà di `root`, correggere i permessi:
 
- flutter pub get
+```bash
+sudo chown -R vmancinelli:vmancinelli /home/vmancinelli/flutter-app
+```
 
- flutter run -d linux
+> Eseguire il comando una sola volta, se necessario.
 
- flutter pub add google_fonts
+---
 
- rm -rf build .dart_tool
+## 2. Avvio dell'ambiente Flutter con Docker
+
+Entrare nella directory del progetto:
+
+```bash
+cd /home/vmancinelli/flutter-app
+```
+
+Avviare il container Flutter:
+
+```bash
+docker compose run --rm flutter
+```
+
+Oppure, per avviare i servizi definiti nel `docker-compose.yml`:
+
+```bash
+docker compose up
+```
+
+---
+
+## 3. Verifica dell'ambiente Flutter
+
+Controllare che Flutter e le relative dipendenze siano configurati correttamente:
+
+```bash
+flutter doctor
+```
+
+Installare le dipendenze del progetto:
+
+```bash
+flutter pub get
+```
+
+---
+
+## 4. Avvio dell'applicazione Linux
+
+Per eseguire l'applicazione direttamente su Linux:
+
+```bash
+flutter run -d linux
+```
+
+---
+
+## 5. Aggiungere Google Fonts
+
+Se il pacchetto non è ancora presente nel progetto:
+
+```bash
+flutter pub add google_fonts
+```
+
+Dopo aver aggiunto nuove dipendenze è consigliabile eseguire:
+
+```bash
+flutter pub get
+```
+
+---
+
+## 6. Pulizia del progetto
+
+In caso di problemi con la cache, le dipendenze o la compilazione, eseguire una
+pulizia completa:
+
+```bash
+rm -rf build .dart_tool
 flutter clean
 flutter pub get
+```
+
+Successivamente avviare nuovamente l'applicazione:
+
+```bash
 flutter run -d linux
+```
 
+---
 
+# 🏭 Build di produzione
 
-su nix 
+## Linux
 
+Creare la versione Linux in modalità release:
+
+```bash
+flutter build linux --release
+```
+
+L'output della compilazione sarà disponibile nella directory:
+
+```text
+build/linux/
+```
+
+---
+
+## Android
+
+Per creare l'APK Android:
+
+```bash
+flutter build apk --release
+```
+
+L'APK generato sarà disponibile nella directory:
+
+```text
+build/app/outputs/flutter-apk/
+```
+
+---
+
+# 🐧 Procedura Linux con Docker
+
+Quando si utilizza il container Docker per compilare l'applicazione Linux,
+potrebbe essere necessario consentire al container di accedere al display X11
+del sistema host.
+
+### 1. Entrare nell'ambiente Nix
+
+```bash
+su nix
+```
+
+### 2. Installare temporaneamente `xhost`
+
+```bash
 nix-shell -p xorg.xhost
+```
 
+### 3. Abilitare l'accesso locale al display X11
+
+```bash
 xhost +local:
+```
 
+> Questo comando permette ai processi locali, incluso il container Docker,
+> di accedere al server grafico X11.
 
+### 4. Avviare Docker Compose
+
+```bash
+docker compose up
+```
+
+### 5. Entrare nel container Docker
+
+Se necessario:
+
+```bash
+su docker
+```
+
+### 6. Pulire il progetto
+
+```bash
+flutter clean
+```
+
+### 7. Installare nuovamente le dipendenze
+
+```bash
+flutter pub get
+```
+
+### 8. Creare la build Linux
+
+```bash
+flutter build linux --release
+```
+
+---
+
+# 📦 Installazione dell'applicazione su NixOS
+
+Dopo aver creato la build Linux:
+
+```bash
+flutter build linux --release
+```
+
+è possibile installare il progetto nel profilo Nix dell'utente.
+
+Dalla directory principale del progetto:
+
+```bash
+nix profile add path:.
+```
+
+## Aggiornare un'installazione esistente
+
+Se è già installata una versione precedente dell'applicazione, rimuoverla
+prima:
+
+```bash
+nix profile remove flutter-starter-app
+```
+
+e successivamente installare la nuova versione:
+
+```bash
+nix profile add path:.
+```
+
+### Procedura completa per aggiornare l'app
+
+```bash
+flutter clean
+flutter pub get
 flutter build linux --release
 
-
-Poi sul NixOS:
-
-nix profile add path:.
-
-Se hai già installato la vecchia versione, prima:
-
 nix profile remove flutter-starter-app
-
-e poi:
-
 nix profile add path:.
+```
+
+In questo modo la nuova build Linux viene installata nel profilo NixOS al posto
+della versione precedente.

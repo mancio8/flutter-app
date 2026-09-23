@@ -165,7 +165,7 @@ class DashboardPage extends ConsumerWidget {
                               '${partita.ora != null ? ' · ${partita.ora!.substring(0, 5)}' : ''}',
                         if (partita.campo != null) partita.campo!,
                       ],
-                      onTap: () => context.go('/girone'),
+                      onTap: () => context.go('/girone-c'),
                     ),
                   ),
                 );
@@ -200,7 +200,7 @@ class DashboardPage extends ConsumerWidget {
                         '${squadra.vinte}V ${squadra.pareggiate}N ${squadra.perse}P',
                         'DR: ${squadra.differenzaReti > 0 ? '+' : ''}${squadra.differenzaReti}',
                       ],
-                      onTap: () => context.go('/girone'),
+                      onTap: () => context.go('/girone-c'),
                     ),
                   ),
                 );
