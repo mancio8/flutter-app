@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/dashboard_provider.dart';
+import '../../../girone/providers/girone_provider.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -10,26 +11,32 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+
     final biblioteca = ref.watch(bibliotecaSummaryProvider);
     final rifornimenti = ref.watch(rifornimentiSummaryProvider);
     final raccolta = ref.watch(raccoltaSummaryProvider);
     final note = ref.watch(noteSummaryProvider);
     final habits = ref.watch(habitsSummaryProvider);
+    final prossimaPartita = ref.watch(prossimaPartitaProvider);
+    final squadraPreferita = ref.watch(squadraPreferitaProvider);
 
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () async {
-          // Invalida tutti i provider per aggiornare i dati
           ref.invalidate(bibliotecaSummaryProvider);
           ref.invalidate(rifornimentiSummaryProvider);
           ref.invalidate(raccoltaSummaryProvider);
           ref.invalidate(noteSummaryProvider);
           ref.invalidate(habitsSummaryProvider);
+          ref.invalidate(campionatoDataProvider);
+          ref.invalidate(campionatoConfigProvider);
         },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // AppBar coerente con le altre pagine
+            // ============================================================
+            // SLIVER APP BAR
+            // ============================================================
             SliverAppBar(
               expandedHeight: 120,
               floating: true,
@@ -73,7 +80,9 @@ class DashboardPage extends ConsumerWidget {
               ),
             ),
 
-            // Saluto / data odierna
+            // ============================================================
+            // SALUTO / DATA
+            // ============================================================
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -98,7 +107,9 @@ class DashboardPage extends ConsumerWidget {
               ),
             ),
 
-            // Header sezione "Panoramica"
+            // ============================================================
+            // HEADER "PANORAMICA"
+            // ============================================================
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
@@ -124,7 +135,81 @@ class DashboardPage extends ConsumerWidget {
               ),
             ),
 
-            // Contenuto scrollabile con le card
+            // ============================================================
+            // PROSSIMA PARTITA
+            // ============================================================
+            prossimaPartita.when(
+              loading: () => const SliverToBoxAdapter(
+                child: SizedBox.shrink(),
+              ),
+              error: (_, __) => const SliverToBoxAdapter(
+                child: SizedBox.shrink(),
+              ),
+              data: (partita) {
+                if (partita == null) {
+                  return const SliverToBoxAdapter(
+                    child: SizedBox.shrink(),
+                  );
+                }
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: _SummaryCard(
+                      icon: Icons.sports_soccer,
+                      color: Colors.green[700]!,
+                      title: 'Prossima partita',
+                      lines: [
+                        '${partita.squadraCasa} vs ${partita.squadraTrasferta}',
+                        if (partita.data != null)
+                          '${_formatData(partita.data!)}'
+                              '${partita.ora != null ? ' · ${partita.ora!.substring(0, 5)}' : ''}',
+                        if (partita.campo != null) partita.campo!,
+                      ],
+                      onTap: () => context.go('/girone'),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // ============================================================
+            // SQUADRA PREFERITA
+            // ============================================================
+            squadraPreferita.when(
+              loading: () => const SliverToBoxAdapter(
+                child: SizedBox.shrink(),
+              ),
+              error: (_, __) => const SliverToBoxAdapter(
+                child: SizedBox.shrink(),
+              ),
+              data: (squadra) {
+                if (squadra == null) {
+                  return const SliverToBoxAdapter(
+                    child: SizedBox.shrink(),
+                  );
+                }
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: _SummaryCard(
+                      icon: Icons.emoji_events,
+                      color: theme.colorScheme.primary,
+                      title: squadra.nome,
+                      lines: [
+                        '${squadra.posizione}ª posizione · ${squadra.punti} punti',
+                        '${squadra.vinte}V ${squadra.pareggiate}N ${squadra.perse}P',
+                        'DR: ${squadra.differenzaReti > 0 ? '+' : ''}${squadra.differenzaReti}',
+                      ],
+                      onTap: () => context.go('/girone'),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // ============================================================
+            // CARD PRINCIPALI
+            // ============================================================
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               sliver: SliverList(
@@ -163,7 +248,8 @@ class DashboardPage extends ConsumerWidget {
                         'Prossima: ${raccolta.prossimoGiornoNome} (tra ${raccolta.giorniAllaProssima} giorni)'
                       else
                         'Nessuna raccolta programmata',
-                      if (raccolta.raccoltaDomani && raccolta.tipoDomani != null)
+                      if (raccolta.raccoltaDomani &&
+                          raccolta.tipoDomani != null)
                         'Domani: ${raccolta.tipoDomani}',
                     ],
                     onTap: () => context.go('/raccolta'),
@@ -178,8 +264,10 @@ class DashboardPage extends ConsumerWidget {
                         'Nessuna nota'
                       else ...[
                         '${note.totaleNote} note totali',
-                        if (note.noteUrgenti > 0) '${note.noteUrgenti} urgenti',
-                        if (note.noteFissate > 0) '${note.noteFissate} fissate',
+                        if (note.noteUrgenti > 0)
+                          '${note.noteUrgenti} urgenti',
+                        if (note.noteFissate > 0)
+                          '${note.noteFissate} fissate',
                       ],
                     ],
                     onTap: () => context.go('/note'),
@@ -203,6 +291,16 @@ class DashboardPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  // ============================================================
+  // HELPER
+  // ============================================================
+
+  String _formatData(DateTime data) {
+    final giorni = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+    final giorno = giorni[data.weekday - 1];
+    return '$giorno ${data.day}/${data.month}/${data.year}';
   }
 
   String _getSaluto() {
@@ -245,6 +343,10 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
+// ============================================================
+// SUMMARY CARD
+// ============================================================
+
 class _SummaryCard extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -285,7 +387,6 @@ class _SummaryCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Icona in cerchio colorato (stile WasteCard / _StatItem)
                 Container(
                   width: 56,
                   height: 56,

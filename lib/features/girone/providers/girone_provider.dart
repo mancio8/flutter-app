@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/squadra_calcio.dart';
 import '../../../core/models/partita_calcio.dart';
 import '../repository/girone_repository.dart';
+import '../../../core/models/campionato_config.dart';
+import '../../../core/providers/supabase_provider.dart';
+import '../repository/campionato_config_repository.dart';
 
 // ============================================================
 // REPOSITORY
@@ -11,32 +14,56 @@ final gironeRepositoryProvider = Provider<GironeRepository>((ref) {
   return GironeRepository();
 });
 
-// ============================================================
-// CALENDARIO (raw)
-// ============================================================
-
-final calendarioProvider = FutureProvider<List<PartitaCalcio>>((ref) async {
-  final repository = ref.watch(gironeRepositoryProvider);
-  return repository.getCalendario();
+final campionatoConfigRepositoryProvider =
+    Provider<CampionatoConfigRepository>((ref) {
+  final supabase = ref.watch(supabaseProvider);
+  return CampionatoConfigRepository(supabase);
 });
 
 // ============================================================
-// CLASSIFICA (con forma calcolata dal calendario)
+// CONFIG (URL + squadra preferita)
 // ============================================================
 
+final campionatoConfigProvider =
+    FutureProvider<CampionatoConfig>((ref) async {
+  final repo = ref.watch(campionatoConfigRepositoryProvider);
+  final config = await repo.getConfig();
+
+  // Se non esiste, ritorna la config di default
+  return config ??
+      CampionatoConfig(
+        id: '',
+        jsonUrl: CampionatoConfig.defaultJsonUrl,
+      );
+});
+
+// ============================================================
+// DATI GREZZI DAL JSON
+// ============================================================
+
+final campionatoDataProvider =
+    FutureProvider<Map<String, dynamic>>((ref) async {
+  final config = await ref.watch(campionatoConfigProvider.future);
+  final repo = ref.watch(gironeRepositoryProvider);
+  return repo.fetchJson(config.jsonUrl);
+});
+
+// ============================================================
+// CLASSIFICA + CALENDARIO
+// ============================================================
+
+final calendarioProvider = FutureProvider<List<PartitaCalcio>>((ref) async {
+  final data = await ref.watch(campionatoDataProvider.future);
+  final repo = ref.watch(gironeRepositoryProvider);
+  return repo.parseCalendario(data);
+});
+
 final classificaProvider = FutureProvider<List<SquadraCalcio>>((ref) async {
-  final repository = ref.watch(gironeRepositoryProvider);
+  final data = await ref.watch(campionatoDataProvider.future);
+  final repo = ref.watch(gironeRepositoryProvider);
+  final classifica = repo.parseClassifica(data);
+  final calendario = repo.parseCalendario(data);
 
-  // Carico entrambi in parallelo
-  final results = await Future.wait([
-    repository.getClassifica(),
-    repository.getCalendario(),
-  ]);
-
-  final classifica = results[0] as List<SquadraCalcio>;
-  final calendario = results[1] as List<PartitaCalcio>;
-
-  // Calcolo forma per ogni squadra
   return classifica.map((squadra) {
     final partiteSquadra = calendario
         .where((p) =>
@@ -54,7 +81,6 @@ final classificaProvider = FutureProvider<List<SquadraCalcio>>((ref) async {
       final isCasa = p.squadraCasa == squadra.nome;
       final golFatti = isCasa ? (p.golCasa ?? 0) : (p.golTrasferta ?? 0);
       final golSubiti = isCasa ? (p.golTrasferta ?? 0) : (p.golCasa ?? 0);
-
       if (golFatti > golSubiti) return 'W';
       if (golFatti < golSubiti) return 'L';
       return 'D';
@@ -65,17 +91,107 @@ final classificaProvider = FutureProvider<List<SquadraCalcio>>((ref) async {
 });
 
 // ============================================================
-// FILTRI
+// PROSSIMA PARTITA
+// ============================================================
+
+final prossimaPartitaProvider =
+    Provider<AsyncValue<PartitaCalcio?>>((ref) {
+  final calendarioAsync = ref.watch(calendarioProvider);
+
+  return calendarioAsync.whenData((partite) {
+    final prossime = partite
+        .where((p) => !p.giocata && p.data != null)
+        .toList()
+      ..sort((a, b) => a.data!.compareTo(b.data!));
+
+    return prossime.isNotEmpty ? prossime.first : null;
+  });
+});
+
+// ============================================================
+// SQUADRA PREFERITA + SUA POSIZIONE
+// ============================================================
+
+final squadraPreferitaProvider =
+    Provider<AsyncValue<SquadraCalcio?>>((ref) {
+  final configAsync = ref.watch(campionatoConfigProvider);
+  final classificaAsync = ref.watch(classificaProvider);
+
+  return configAsync.when(
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+    data: (config) {
+      if (config.squadraPreferita == null) {
+        return const AsyncValue.data(null);
+      }
+
+      return classificaAsync.whenData((classifica) {
+        try {
+          return classifica.firstWhere(
+            (s) => s.nome.toLowerCase() ==
+                config.squadraPreferita!.toLowerCase(),
+          );
+        } catch (_) {
+          return null;
+        }
+      });
+    },
+  );
+});
+
+// ============================================================
+// FILTRI (invariati)
 // ============================================================
 
 final faseSelezionataProvider =
     StateProvider<FasePartita>((ref) => FasePartita.andata);
 
+final giornataSelezionataProvider =
+    StateProvider<int?>((ref) => null);
 
+final giornataCorrenteProvider = Provider<int?>((ref) {
+  final calendarioAsync = ref.watch(calendarioProvider);
+  final fase = ref.watch(faseSelezionataProvider);
+  final calendario = calendarioAsync.value ?? [];
 
-// ============================================================
-// CALENDARIO FILTRATO
-// ============================================================
+  final partiteFase = calendario.where((p) => p.fase == fase).toList();
+  if (partiteFase.isEmpty) return null;
+
+  // 1. Prossime con data
+  final prossimeConData = partiteFase
+      .where((p) => !p.giocata && p.data != null)
+      .toList()
+    ..sort((a, b) => a.data!.compareTo(b.data!));
+
+  if (prossimeConData.isNotEmpty) return prossimeConData.first.giornata;
+
+  // 2. Fallback: prima non giocata
+  final nonGiocate = partiteFase
+      .where((p) => !p.giocata)
+      .map((p) => p.giornata)
+      .where((g) => g > 0)
+      .toSet()
+      .toList()
+    ..sort();
+
+  if (nonGiocate.isNotEmpty) return nonGiocate.first;
+
+  // 3. Fallback finale: ultima giornata
+  final tutte = partiteFase
+      .map((p) => p.giornata)
+      .where((g) => g > 0)
+      .toSet()
+      .toList()
+    ..sort();
+
+  return tutte.isNotEmpty ? tutte.last : null;
+});
+
+final giornataEffettivaProvider = Provider<int?>((ref) {
+  final selezionata = ref.watch(giornataSelezionataProvider);
+  if (selezionata != null) return selezionata;
+  return ref.watch(giornataCorrenteProvider);
+});
 
 final calendarioFiltratoProvider =
     Provider<AsyncValue<List<PartitaCalcio>>>((ref) {
@@ -97,66 +213,11 @@ final giornateDisponibiliProvider = Provider<List<int>>((ref) {
   final fase = ref.watch(faseSelezionataProvider);
   final calendario = calendarioAsync.value ?? [];
 
-  final giornate = calendario
-      .where((p) => p.fase == fase)
-      .map((p) => p.giornata)
-      .where((g) => g > 0)
-      .toSet()
-      .toList()
-    ..sort();
-
-  return giornate;
-});
-
-// ============================================================
-// GIORNATA CORRENTE (prossima partita non giocata)
-// ============================================================
-
-final giornataCorrenteProvider = Provider<int?>((ref) {
-  final calendarioAsync = ref.watch(calendarioProvider);
-  final fase = ref.watch(faseSelezionataProvider);
-  final calendario = calendarioAsync.value ?? [];
-
-  // Filtra solo la fase corrente
-  final partiteFase =
-      calendario.where((p) => p.fase == fase).toList();
-
-  if (partiteFase.isEmpty) return null;
-
-  // Prossima partita non giocata con data valida
-  final prossimePartite = partiteFase
-      .where((p) => !p.giocata && p.data != null)
-      .toList()
-    ..sort((a, b) => a.data!.compareTo(b.data!));
-
-  if (prossimePartite.isNotEmpty) {
-    return prossimePartite.first.giornata;
-  }
-
-  // Se tutte giocate, mostra l'ultima giornata
-  final tutteLeGiornate = partiteFase
-      .map((p) => p.giornata)
-      .where((g) => g > 0)
-      .toSet()
-      .toList()
-    ..sort();
-
-  return tutteLeGiornate.isNotEmpty ? tutteLeGiornate.last : null;
-});
-
-// ============================================================
-// GIORNATA SELEZIONATA (dall'utente con frecce)
-// ============================================================
-
-final giornataSelezionataProvider = StateProvider<int?>((ref) => null);
-
-// ============================================================
-// GIORNATA EFFETTIVA (usa selezionata, o corrente come default)
-// ============================================================
-
-final giornataEffettivaProvider = Provider<int?>((ref) {
-  final selezionata = ref.watch(giornataSelezionataProvider);
-  if (selezionata != null) return selezionata;
-
-  return ref.watch(giornataCorrenteProvider);
+  return (calendario
+          .where((p) => p.fase == fase)
+          .map((p) => p.giornata)
+          .where((g) => g > 0)
+          .toSet()
+          .toList()
+        ..sort());
 });
