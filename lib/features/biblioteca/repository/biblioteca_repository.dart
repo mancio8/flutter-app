@@ -207,6 +207,11 @@ class BibliotecaRepository {
       'genre': libro.genere,
       'description': libro.descrizione,
       'user_id': userId,
+      'tipo': libro.tipo,
+      'volumi_totali': libro.volumiTotali,
+      'volumi_letti': libro.volumiLetti,
+      'data_ultima_lettura':
+          libro.dataUltimaLettura?.toIso8601String().split('T')[0],
     };
 
     await _supabase.from('biblioteca_libri').insert(data);
@@ -227,6 +232,11 @@ class BibliotecaRepository {
       'rating': libro.valutazione,
       'review': libro.recensione,
       'user_id': userId,
+      'tipo': libro.tipo,
+      'volumi_totali': libro.volumiTotali,
+      'volumi_letti': libro.volumiLetti,
+      'data_ultima_lettura':
+          libro.dataUltimaLettura?.toIso8601String().split('T')[0],
     };
 
     await _supabase
@@ -235,6 +245,8 @@ class BibliotecaRepository {
         .eq('id', libro.id)
         .eq('user_id', userId);
   }
+
+
 
   // Elimina un libro
   Future<void> deleteLibro(String id) async {

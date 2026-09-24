@@ -1,13 +1,14 @@
+// File: lib/features/biblioteca/presentation/pages/biblioteca_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/models/libro.dart';
 import '../../providers/biblioteca_provider.dart';
 import '../widgets/book_card.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:go_router/go_router.dart';
 
 class BibliotecaPage extends ConsumerWidget {
   const BibliotecaPage({super.key});
@@ -26,7 +27,7 @@ class BibliotecaPage extends ConsumerWidget {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // AppBar personalizzato
+            // AppBar
             SliverAppBar(
               expandedHeight: 120,
               floating: true,
@@ -71,8 +72,7 @@ class BibliotecaPage extends ConsumerWidget {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.bookmark_outline),
-                  onPressed: () =>
-                      context.push('/wishlist'), // richiede import di go_router
+                  onPressed: () => context.push('/wishlist'),
                   tooltip: 'Wishlist',
                 ),
                 IconButton(
@@ -228,6 +228,10 @@ class BibliotecaPage extends ConsumerWidget {
                         libro: libro,
                         onEdit: () => _showEditDialog(context, ref, libro),
                         onDelete: () => _confirmDelete(context, ref, libro),
+                        onIncrementVolume:
+                            libro.isSerie && !libro.isSerieCompleta
+                                ? () => _incrementVolume(context, ref, libro)
+                                : null,
                       );
                     }, childCount: libri.length),
                   );
@@ -252,11 +256,30 @@ class BibliotecaPage extends ConsumerWidget {
     return 2;
   }
 
+  void _incrementVolume(BuildContext context, WidgetRef ref, Libro libro) {
+    final nuovo = libro.copyWith(
+      volumiLetti: libro.volumiLetti + 1,
+      dataUltimaLettura: DateTime.now(),
+    );
+    ref.read(bibliotecaProvider.notifier).updateLibro(nuovo);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Letto volume ${nuovo.volumiLetti}'
+          '${libro.volumiTotali != null ? "/${libro.volumiTotali}" : ""}'
+          ' di "${libro.titolo}"',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
     try {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Esportazione in corso...')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Esportazione in corso...')),
+      );
 
       final jsonString = await ref.read(bibliotecaExportProvider.future);
 
@@ -268,14 +291,14 @@ class BibliotecaPage extends ConsumerWidget {
       await Share.shareXFiles([XFile(file.path)]);
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Esportazione completata!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Esportazione completata!')),
+      );
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Errore nell\'esportazione: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Errore nell\'esportazione: $e')),
+      );
     }
   }
 
@@ -320,7 +343,6 @@ class BibliotecaPage extends ConsumerWidget {
 
     if (merge == null || !context.mounted) return;
 
-    // NIENTE dialog di caricamento bloccante — usiamo uno SnackBar non invasivo
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Importazione in corso...'),
@@ -335,8 +357,7 @@ class BibliotecaPage extends ConsumerWidget {
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-      ref.invalidate(bibliotecaProvider); // resta utile come sicurezza
+      ref.invalidate(bibliotecaProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -404,7 +425,10 @@ class BibliotecaPage extends ConsumerWidget {
   }
 }
 
-// Stato vuoto migliorato
+// ============================================================
+// STATO VUOTO
+// ============================================================
+
 class _EmptyState extends StatelessWidget {
   final VoidCallback onAdd;
 
@@ -457,7 +481,10 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// Dialog migliorato
+// ============================================================
+// DIALOG AGGIUNTA / MODIFICA
+// ============================================================
+
 class _AddBookDialog extends ConsumerStatefulWidget {
   final WidgetRef ref;
   final Libro? libro;
@@ -473,21 +500,36 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
   late final TextEditingController _titoloController;
   late final TextEditingController _autoreController;
   late final TextEditingController _copertinaController;
+  late final TextEditingController _volumiTotaliController;
+  late final TextEditingController _volumiLettiController;
+
   DateTime _dataLettura = DateTime.now();
+  String _tipo = 'libro';
 
   bool get isEditing => widget.libro != null;
 
   @override
   void initState() {
     super.initState();
-    _titoloController = TextEditingController(text: widget.libro?.titolo ?? '');
-    _autoreController = TextEditingController(text: widget.libro?.autore ?? '');
+    _titoloController =
+        TextEditingController(text: widget.libro?.titolo ?? '');
+    _autoreController =
+        TextEditingController(text: widget.libro?.autore ?? '');
     _copertinaController = TextEditingController(
       text: widget.libro?.copertinaUrl ?? '',
     );
+    _volumiTotaliController = TextEditingController(
+      text: widget.libro?.volumiTotali?.toString() ?? '',
+    );
+    _volumiLettiController = TextEditingController(
+      text: (widget.libro?.volumiLetti ?? 0) > 0
+          ? widget.libro!.volumiLetti.toString()
+          : '',
+    );
+
     if (widget.libro != null) {
-      _dataLettura =
-          widget.libro!.dataLettura ?? DateTime.now(); // FIX: fallback se null
+      _dataLettura = widget.libro!.dataLettura ?? DateTime.now();
+      _tipo = widget.libro!.tipo;
     }
   }
 
@@ -496,6 +538,8 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
     _titoloController.dispose();
     _autoreController.dispose();
     _copertinaController.dispose();
+    _volumiTotaliController.dispose();
+    _volumiLettiController.dispose();
     super.dispose();
   }
 
@@ -515,6 +559,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header
                 Row(
                   children: [
                     Container(
@@ -538,6 +583,8 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                   ],
                 ),
                 const SizedBox(height: 24),
+
+                // Titolo
                 TextFormField(
                   controller: _titoloController,
                   decoration: InputDecoration(
@@ -551,6 +598,8 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                       v == null || v.isEmpty ? 'Inserisci il titolo' : null,
                 ),
                 const SizedBox(height: 16),
+
+                // Autore
                 TextFormField(
                   controller: _autoreController,
                   decoration: InputDecoration(
@@ -564,6 +613,8 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                       v == null || v.isEmpty ? 'Inserisci l\'autore' : null,
                 ),
                 const SizedBox(height: 16),
+
+                // Data
                 InkWell(
                   onTap: () async {
                     final date = await showDatePicker(
@@ -573,9 +624,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                       lastDate: DateTime(2030),
                     );
                     if (date != null && mounted) {
-                      setState(() {
-                        _dataLettura = date;
-                      });
+                      setState(() => _dataLettura = date);
                     }
                   },
                   child: InputDecorator(
@@ -592,6 +641,8 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // URL copertina
                 TextFormField(
                   controller: _copertinaController,
                   decoration: InputDecoration(
@@ -604,7 +655,79 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                   ),
                   keyboardType: TextInputType.url,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+
+                // Tipo
+                DropdownButtonFormField<String>(
+                  value: _tipo,
+                  decoration: InputDecoration(
+                    labelText: 'Tipo',
+                    prefixIcon: const Icon(Icons.category_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'libro', child: Text('Libro')),
+                    DropdownMenuItem(value: 'manga', child: Text('Manga')),
+                    DropdownMenuItem(value: 'fumetto', child: Text('Fumetto')),
+                    DropdownMenuItem(value: 'serie', child: Text('Serie')),
+                  ],
+                  onChanged: (v) => setState(() => _tipo = v ?? 'libro'),
+                ),
+                const SizedBox(height: 16),
+
+                // Volumi (solo per serie)
+                if (_tipo != 'libro') ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _volumiTotaliController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Volumi totali',
+                            suffixText: 'vol.',
+                            prefixIcon: const Icon(Icons.numbers),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _volumiLettiController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Volumi letti',
+                            suffixText: 'vol.',
+                            prefixIcon:
+                                const Icon(Icons.check_circle_outline),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return null;
+                            final letti = int.tryParse(v);
+                            final totali =
+                                int.tryParse(_volumiTotaliController.text);
+                            if (letti == null) return 'Numero non valido';
+                            if (totali != null && letti > totali) {
+                              return 'Troppi';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Bottoni
                 Row(
                   children: [
                     Expanded(
@@ -645,8 +768,7 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
   void _save() {
     if (_formKey.currentState!.validate()) {
       final libro = Libro(
-        id:
-            widget.libro?.id ??
+        id: widget.libro?.id ??
             DateTime.now().millisecondsSinceEpoch.toString(),
         titolo: _titoloController.text,
         autore: _autoreController.text,
@@ -654,6 +776,10 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
         copertinaUrl: _copertinaController.text.isEmpty
             ? null
             : _copertinaController.text,
+        tipo: _tipo,
+        volumiTotali: int.tryParse(_volumiTotaliController.text),
+        volumiLetti: int.tryParse(_volumiLettiController.text) ?? 0,
+        dataUltimaLettura: _dataLettura,
       );
 
       if (isEditing) {

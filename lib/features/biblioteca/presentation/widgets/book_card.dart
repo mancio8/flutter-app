@@ -1,3 +1,4 @@
+// File: lib/features/biblioteca/presentation/widgets/book_card.dart
 import 'package:flutter/material.dart';
 import '../../../../core/models/libro.dart';
 
@@ -5,8 +6,15 @@ class BookCard extends StatelessWidget {
   final Libro libro;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onIncrementVolume;
 
-  const BookCard({super.key, required this.libro, this.onEdit, this.onDelete});
+  const BookCard({
+    super.key,
+    required this.libro,
+    this.onEdit,
+    this.onDelete,
+    this.onIncrementVolume,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,49 +35,116 @@ class BookCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Copertina con overlay
+          // Copertina con badge
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        theme.colorScheme.primaryContainer.withOpacity(0.3),
+                        theme.colorScheme.surface,
+                      ],
+                    ),
+                  ),
+                  child: libro.copertinaUrl != null &&
+                          libro.copertinaUrl!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                          child: Image.network(
+                            libro.copertinaUrl!,
+                            fit: BoxFit.contain,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildPlaceholder(theme);
+                            },
+                            loadingBuilder:
+                                (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes !=
+                                              null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : _buildPlaceholder(theme),
                 ),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    theme.colorScheme.primaryContainer.withOpacity(0.3),
-                    theme.colorScheme.surface,
-                  ],
-                ),
-              ),
-              child:
-                  libro.copertinaUrl != null && libro.copertinaUrl!.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(20),
+                // Badge tipo
+                if (libro.isSerie)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                      child: Image.network(
-                        libro.copertinaUrl!,
-                        fit: BoxFit.contain,
-                        width: double.infinity,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholder(theme);
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                  : null,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        libro.tipo.toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSecondaryContainer,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                // Badge completa
+                if (libro.isSerieCompleta)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check, size: 12, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'COMPLETA',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 9,
+                              letterSpacing: 0.5,
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
-                    )
-                  : _buildPlaceholder(theme),
+                    ),
+                  ),
+              ],
             ),
           ),
 
@@ -112,35 +187,82 @@ class BookCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
 
-                // Data
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      size: 14,
-                      color: theme.colorScheme.secondary,
+                // Progresso serie o data lettura
+                if (libro.isSerie) ...[
+                  const SizedBox(height: 8),
+                  if (libro.volumiTotali != null &&
+                      libro.volumiTotali! > 0) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: libro.progressoSerie,
+                              minHeight: 6,
+                              backgroundColor:
+                                  theme.colorScheme.surfaceVariant,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${libro.volumiLetti}/${libro.volumiTotali}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
+                  ] else
                     Text(
-                      // FIX: dataLettura ora è nullable
-                      libro.dataLettura != null
-                          ? _formatData(libro.dataLettura!)
-                          : 'Data non disponibile',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.w500,
+                      '${libro.volumiLetti} volumi letti',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
-                  ],
-                ),
+                ] else ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 14,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        libro.dataLettura != null
+                            ? _formatData(libro.dataLettura!)
+                            : 'Data non disponibile',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.secondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
 
                 const SizedBox(height: 12),
 
                 // Azioni
                 Row(
                   children: [
+                    if (libro.isSerie && !libro.isSerieCompleta) ...[
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.add_circle_outline,
+                          label: '+1',
+                          color: Colors.green,
+                          onPressed: onIncrementVolume,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Expanded(
                       child: _ActionButton(
                         icon: Icons.edit_outlined,
@@ -192,18 +314,8 @@ class BookCard extends StatelessWidget {
 
   String _formatData(DateTime data) {
     final mesi = [
-      'gen',
-      'feb',
-      'mar',
-      'apr',
-      'mag',
-      'giu',
-      'lug',
-      'ago',
-      'set',
-      'ott',
-      'nov',
-      'dic',
+      'gen', 'feb', 'mar', 'apr', 'mag', 'giu',
+      'lug', 'ago', 'set', 'ott', 'nov', 'dic',
     ];
     return '${data.day} ${mesi[data.month - 1]} ${data.year}';
   }
@@ -236,15 +348,17 @@ class _ActionButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 16, color: color),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+              if (label.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

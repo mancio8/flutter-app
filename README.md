@@ -444,6 +444,14 @@ flutter pub get
 flutter build linux --release
 
 nix profile remove flutter-starter-app
+
+docker run --rm \
+  -v flutter-starter-app_flutter_build:/source:ro \
+  -v "$PWD":/dest \
+  alpine \
+  sh -c 'rm -rf /dest/build && cp -a /source /dest/build'
+
+  
 nix profile add path:.
 ```
 
