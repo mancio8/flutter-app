@@ -375,7 +375,11 @@ xhost +local:
 
 ```bash
 docker compose up
+
+docker compose exec flutter bash
 ```
+
+
 
 ### 5. Entrare nel container Docker
 

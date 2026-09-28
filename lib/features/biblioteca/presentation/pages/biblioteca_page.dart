@@ -10,11 +10,25 @@ import '../../../../core/models/libro.dart';
 import '../../providers/biblioteca_provider.dart';
 import '../widgets/book_card.dart';
 
-class BibliotecaPage extends ConsumerWidget {
+class BibliotecaPage extends ConsumerStatefulWidget {
   const BibliotecaPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BibliotecaPage> createState() => _BibliotecaPageState();
+}
+
+class _BibliotecaPageState extends ConsumerState<BibliotecaPage> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final libriAsync = ref.watch(bibliotecaProvider);
     final ordinamento = ref.watch(ordinamentoProvider);
     final theme = Theme.of(context);
@@ -88,11 +102,11 @@ class BibliotecaPage extends ConsumerWidget {
               ],
             ),
 
-            // Barra ordinamento
+            // Card: ricerca + ordinamento
             SliverToBoxAdapter(
               child: Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
@@ -104,67 +118,113 @@ class BibliotecaPage extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.sort,
-                      size: 20,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('Ordina per:'),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: ordinamento,
-                        isExpanded: true,
-                        underline: const SizedBox(),
-                        dropdownColor: theme.colorScheme.surface,
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'title',
-                            child: Text('Titolo'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'author',
-                            child: Text('Autore'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'read_date',
-                            child: Text('Data lettura'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            ref.read(ordinamentoProvider.notifier).state =
-                                value;
-                          }
-                        },
+                    // Ricerca
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (value) => setState(() => _query = value),
+                      decoration: InputDecoration(
+                        hintText: 'Cerca per titolo o autore...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _query.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _query = '');
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Ordinamento
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.sort,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('Ordina per:'),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: ordinamento,
+                            isExpanded: true,
+                            underline: const SizedBox(),
+                            dropdownColor: theme.colorScheme.surface,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'title',
+                                child: Text('Titolo'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'author',
+                                child: Text('Autore'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'read_date',
+                                child: Text('Data lettura'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                ref
+                                    .read(ordinamentoProvider.notifier)
+                                    .state = value;
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
 
-            // Contatore libri
+            // Contatore
             SliverToBoxAdapter(
               child: libriAsync.when(
                 loading: () => const SizedBox(),
                 error: (_, __) => const SizedBox(),
-                data: (libri) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    '${libri.length} libri nella collezione',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                data: (libri) {
+                  var filtrati = libri;
+                  if (_query.trim().isNotEmpty) {
+                    final q = _query.toLowerCase().trim();
+                    filtrati = libri.where((l) {
+                      return l.titolo.toLowerCase().contains(q) ||
+                          l.autore.toLowerCase().contains(q);
+                    }).toList();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Text(
+                      _query.trim().isEmpty
+                          ? '${libri.length} libri nella collezione'
+                          : '${filtrati.length} di ${libri.length} libri',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
 
-            // Griglia libri
+            // Griglia
             SliverPadding(
               padding: const EdgeInsets.all(16),
               sliver: libriAsync.when(
@@ -207,7 +267,49 @@ class BibliotecaPage extends ConsumerWidget {
                 ),
 
                 data: (libri) {
-                  if (libri.isEmpty) {
+                  // 1) Filtro
+                  var filtrati = libri;
+                  if (_query.trim().isNotEmpty) {
+                    final q = _query.toLowerCase().trim();
+                    filtrati = libri.where((l) {
+                      return l.titolo.toLowerCase().contains(q) ||
+                          l.autore.toLowerCase().contains(q);
+                    }).toList();
+                  }
+
+                  // 2) Ordinamento
+                  final libriOrdinati = List<Libro>.from(filtrati);
+                  switch (ordinamento) {
+                    case 'title':
+                      libriOrdinati.sort(
+                        (a, b) => a.titolo
+                            .toLowerCase()
+                            .compareTo(b.titolo.toLowerCase()),
+                      );
+                      break;
+                    case 'author':
+                      libriOrdinati.sort(
+                        (a, b) => a.autore
+                            .toLowerCase()
+                            .compareTo(b.autore.toLowerCase()),
+                      );
+                      break;
+                    case 'read_date':
+                      libriOrdinati.sort((a, b) {
+                        final da = a.dataLettura ?? DateTime(0);
+                        final db = b.dataLettura ?? DateTime(0);
+                        return db.compareTo(da);
+                      });
+                      break;
+                  }
+
+                  // 3) Stato vuoto
+                  if (libriOrdinati.isEmpty) {
+                    if (_query.trim().isNotEmpty) {
+                      return SliverFillRemaining(
+                        child: _NoResultsState(query: _query),
+                      );
+                    }
                     return SliverFillRemaining(
                       child: _EmptyState(
                         onAdd: () => _showAddDialog(context, ref),
@@ -215,6 +317,7 @@ class BibliotecaPage extends ConsumerWidget {
                     );
                   }
 
+                  // 4) Griglia
                   return SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: _getCrossAxisCount(context),
@@ -223,7 +326,7 @@ class BibliotecaPage extends ConsumerWidget {
                       childAspectRatio: 0.65,
                     ),
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      final libro = libri[index];
+                      final libro = libriOrdinati[index];
                       return BookCard(
                         libro: libro,
                         onEdit: () => _showEditDialog(context, ref, libro),
@@ -233,7 +336,7 @@ class BibliotecaPage extends ConsumerWidget {
                                 ? () => _incrementVolume(context, ref, libro)
                                 : null,
                       );
-                    }, childCount: libri.length),
+                    }, childCount: libriOrdinati.length),
                   );
                 },
               ),
@@ -482,6 +585,60 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ============================================================
+// STATO NESSUN RISULTATO
+// ============================================================
+
+class _NoResultsState extends StatelessWidget {
+  final String query;
+
+  const _NoResultsState({required this.query});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest
+                    .withOpacity(0.4),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.search_off,
+                size: 80,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Nessun risultato',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Nessun libro trovato per "$query"',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
 // DIALOG AGGIUNTA / MODIFICA
 // ============================================================
 
@@ -672,13 +829,16 @@ class _AddBookDialogState extends ConsumerState<_AddBookDialog> {
                     DropdownMenuItem(value: 'manga', child: Text('Manga')),
                     DropdownMenuItem(value: 'fumetto', child: Text('Fumetto')),
                     DropdownMenuItem(value: 'serie', child: Text('Serie')),
+                    DropdownMenuItem(value: 'rivista', child: Text('Rivista')),
                   ],
                   onChanged: (v) => setState(() => _tipo = v ?? 'libro'),
                 ),
                 const SizedBox(height: 16),
 
-                // Volumi (solo per serie)
-                if (_tipo != 'libro') ...[
+                // Volumi (solo per manga / fumetto / serie)
+                if (_tipo == 'manga' ||
+                    _tipo == 'fumetto' ||
+                    _tipo == 'serie') ...[
                   Row(
                     children: [
                       Expanded(
