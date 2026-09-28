@@ -97,15 +97,46 @@ final classificaProvider = FutureProvider<List<SquadraCalcio>>((ref) async {
 final prossimaPartitaProvider =
     Provider<AsyncValue<PartitaCalcio?>>((ref) {
   final calendarioAsync = ref.watch(calendarioProvider);
+  final squadraPreferitaAsync = ref.watch(squadraPreferitaProvider);
 
-  return calendarioAsync.whenData((partite) {
-    final prossime = partite
-        .where((p) => !p.giocata && p.data != null)
-        .toList()
-      ..sort((a, b) => a.data!.compareTo(b.data!));
+  return calendarioAsync.when(
+    loading: () => const AsyncLoading(),
+    error: (error, stackTrace) => AsyncError(error, stackTrace),
+    data: (partite) {
+      return squadraPreferitaAsync.when(
+        loading: () => const AsyncLoading(),
+        error: (error, stackTrace) => AsyncError(error, stackTrace),
+        data: (squadra) {
+          if (squadra == null) {
+            return const AsyncData(null);
+          }
 
-    return prossime.isNotEmpty ? prossime.first : null;
-  });
+          final nomeSquadra = squadra.nome.trim().toLowerCase();
+
+          final prossime = partite
+              .where((p) {
+                if (p.giocata || p.data == null) {
+                  return false;
+                }
+
+                final casa =
+                    p.squadraCasa.trim().toLowerCase();
+                final trasferta =
+                    p.squadraTrasferta.trim().toLowerCase();
+
+                return casa == nomeSquadra ||
+                    trasferta == nomeSquadra;
+              })
+              .toList()
+            ..sort((a, b) => a.data!.compareTo(b.data!));
+
+          return AsyncData(
+            prossime.isNotEmpty ? prossime.first : null,
+          );
+        },
+      );
+    },
+  );
 });
 
 // ============================================================
