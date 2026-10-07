@@ -99,9 +99,26 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold>
   /// Chiamato SOLO quando canPop era false (cioè siamo in home).
   /// Il back dalle altre pagine è gestito da GoRouter (torna alla home).
   void _handleBack() {
+    final router = GoRouter.of(context);
+
+    // Se qualche pagina è stata aperta con push, prima la chiudo
+    if (router.canPop()) {
+      router.pop();
+      return;
+    }
+
+    final path = GoRouterState.of(context).uri.path;
+    final parent = _parentOf(path);
+
+    // Non siamo in home: torna alla rotta padre
+    if (parent != null) {
+      context.go(parent);
+      return;
+    }
+
+    // Siamo in home: doppio back per uscire
     final now = DateTime.now();
 
-    // Primo tap → snackbar
     if (_lastBackPress == null ||
         now.difference(_lastBackPress!) > _doubleBackDuration) {
       _lastBackPress = now;
@@ -118,23 +135,27 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold>
       return;
     }
 
-    // Secondo tap entro 2 secondi → esci
     _lastBackPress = null;
     SystemNavigator.pop();
+  }
+
+  /// Ritorna la rotta padre, o null se siamo già in home.
+  String? _parentOf(String path) {
+    if (path == '/home') return null;
+    if (path.startsWith('/users/')) return '/users';
+    if (path.startsWith('/gestione-veicolo/')) return '/veicoli';
+    return '/home';
   }
 
   @override
   Widget build(BuildContext context) {
     final currentRoute = GoRouterState.of(context).matchedLocation;
-    final isHome = currentRoute == '/home';
+    
 
     return PopScope(
-      // canPop: false → blocca il back di sistema quando siamo in home
-      // canPop: true  → lascia che GoRouter gestisca il back dalle altre pagine
-      canPop: !isHome,
+      canPop: false, // gestiamo sempre il back a mano
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        // Arriva qui solo se canPop era false, cioè siamo in home
         _handleBack();
       },
       child: AnimatedBuilder(
