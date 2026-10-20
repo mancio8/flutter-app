@@ -28,6 +28,11 @@ import '../../features/veicoli/presentation/pages/veicoli_page.dart';
 import '../../features/allenamenti/presentation/pages/allenamenti_page.dart';
 import '../../features/viaggi/presentation/pages/viaggi_page.dart'; // NUOVO IMPORT
 import '../../features/girone/presentation/pages/girone_page.dart';
+import '../../features/darts/domain/darts_models.dart';
+import '../../features/darts/presentation/pages/darts_page.dart';
+import '../../features/darts/presentation/pages/darts_game_page.dart';
+import 'package:flutter/material.dart';
+
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
   // This will be updated when onboarding is completed
@@ -185,6 +190,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/girone-c',
             builder: (context, state) => const GironePage(),
+          ),
+          GoRoute(
+            path: '/darts',
+            builder: (context, state) => const DartsPage(),
+          ),
+          GoRoute(
+            path: '/darts/partita',
+            builder: (context, state) {
+              final cfg = state.extra as DartsGameConfig?;
+              if (cfg == null) {
+                return const Scaffold(body: Center(child: Text('Partita non valida')));
+              }
+              return DartsGamePage(config: cfg);
+            },
           ),
         ],
       ),

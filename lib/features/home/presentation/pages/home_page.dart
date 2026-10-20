@@ -180,6 +180,12 @@ class HomePage extends StatelessWidget {
                         color: Colors.green[700]!,
                         onTap: () => context.go('/girone-c'),
                       ),
+                      _AppTile(
+                        icon: Icons.adjust,
+                        label: 'Freccette',
+                        color: Colors.redAccent,
+                        onTap: () => context.go('/darts'),
+                      ),
                     ],
                   ).animate().fadeIn(delay: 300.ms),
 
