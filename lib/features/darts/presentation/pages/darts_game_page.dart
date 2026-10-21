@@ -7,13 +7,10 @@ import '../../data/training_store.dart';
 import '../../domain/darts_models.dart';
 import '../../domain/x01_game.dart';
 import '../../providers/darts_provider.dart';
+import '../widgets/darts_widgets.dart';
 
-// Come sul bersaglio: triplo rosso, doppio verde
-Color _multColor(int m) => switch (m) {
-      3 => const Color(0xFFE53935),
-      2 => const Color(0xFF2E9E5B),
-      _ => const Color(0xFF607D8B),
-    };
+
+
 
 class DartsGamePage extends ConsumerStatefulWidget {
   const DartsGamePage({super.key, required this.config});
@@ -418,7 +415,7 @@ class _DartsGamePageState extends ConsumerState<DartsGamePage> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: _DartSlot(
+                  child: DartSlot(
                     dart: k < _game.turnDarts.length ? _game.turnDarts[k] : null,
                   ),
                 ),
@@ -464,7 +461,7 @@ class _DartsGamePageState extends ConsumerState<DartsGamePage> {
 
   Widget _multButton(String label, int m) {
     final sel = _mult == m;
-    final c = _multColor(m);
+    final c = multColor(m);
     return Expanded(
       child: GestureDetector(
         onTap: () => _toggleMult(m),
@@ -493,7 +490,7 @@ class _DartsGamePageState extends ConsumerState<DartsGamePage> {
 
   Widget _numKey(ThemeData theme, int v) {
     final tinted = _mult > 1;
-    final c = _multColor(_mult);
+    final c = multColor(_mult);
     return Material(
       color: tinted ? c.withOpacity(0.16) : theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(12),
@@ -626,45 +623,7 @@ class _DartsGamePageState extends ConsumerState<DartsGamePage> {
 
 // ======================= componenti =======================
 
-class _DartSlot extends StatelessWidget {
-  const _DartSlot({required this.dart});
-  final DartThrow? dart;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final d = dart;
-    final c = d == null
-        ? theme.colorScheme.outlineVariant
-        : (d.value == 0 ? const Color(0xFF607D8B) : _multColor(d.mult));
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      decoration: BoxDecoration(
-        color: d == null ? Colors.transparent : c.withOpacity(0.16),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c, width: d == null ? 1 : 2),
-      ),
-      child: Column(
-        children: [
-          Text(
-            d?.label ?? '·',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: d == null ? theme.colorScheme.outline : c,
-            ),
-          ),
-          Text(
-            d == null ? ' ' : '${d.points}',
-            style: TextStyle(fontSize: 11, color: c),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _MiniStat extends StatelessWidget {
   const _MiniStat(this.label, this.value);

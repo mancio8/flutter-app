@@ -51,14 +51,18 @@ class DartsPlayer {
   int get hashCode => isRegistered ? id.hashCode : name.hashCode;
 }
 
+enum DartsMode { x01, cricket }
+
 class DartsGameConfig {
   const DartsGameConfig({
     required this.players,
-    required this.startScore,
-    required this.outRule,
+    this.mode = DartsMode.x01,
+    this.startScore = 501,
+    this.outRule = OutRule.double,
   });
 
   final List<DartsPlayer> players;
+  final DartsMode mode;
   final int startScore;
   final OutRule outRule;
 

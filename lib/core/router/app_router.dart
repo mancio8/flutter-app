@@ -32,7 +32,7 @@ import '../../features/darts/domain/darts_models.dart';
 import '../../features/darts/presentation/pages/darts_page.dart';
 import '../../features/darts/presentation/pages/darts_game_page.dart';
 import 'package:flutter/material.dart';
-
+import '../../features/darts/presentation/pages/cricket_game_page.dart';
 
 final onboardingCompletedProvider = StateProvider<bool>((ref) {
   // This will be updated when onboarding is completed
@@ -200,9 +200,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final cfg = state.extra as DartsGameConfig?;
               if (cfg == null) {
-                return const Scaffold(body: Center(child: Text('Partita non valida')));
+                return const Scaffold(
+                  body: Center(child: Text('Partita non valida')),
+                );
               }
-              return DartsGamePage(config: cfg);
+              return cfg.mode == DartsMode.cricket
+                  ? CricketGamePage(config: cfg)
+                  : DartsGamePage(config: cfg);
             },
           ),
         ],

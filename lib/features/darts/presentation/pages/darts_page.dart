@@ -5,10 +5,29 @@ import '../../domain/darts_models.dart';
 import '../../domain/x01_game.dart';
 import '../../providers/darts_provider.dart';
 
-const _avatars = ['🎯', '🏹', '⚡', '🔥', '💎', '🦁', '🐉', '🦊', '👑', '🌟', '🦅', '🤖'];
+const _avatars = [
+  '🎯',
+  '🏹',
+  '⚡',
+  '🔥',
+  '💎',
+  '🦁',
+  '🐉',
+  '🦊',
+  '👑',
+  '🌟',
+  '🦅',
+  '🤖',
+];
 const _palette = [
-  '#00d68f', '#2d9ef5', '#ff4560', '#f5c842',
-  '#9b6dff', '#ff6b35', '#00d4ff', '#ff3bff',
+  '#00d68f',
+  '#2d9ef5',
+  '#ff4560',
+  '#f5c842',
+  '#9b6dff',
+  '#ff6b35',
+  '#00d4ff',
+  '#ff3bff',
 ];
 
 class DartsPage extends ConsumerStatefulWidget {
@@ -22,6 +41,7 @@ class _DartsPageState extends ConsumerState<DartsPage> {
   final List<DartsPlayer> _selected = []; // l'ordine di tocco = ordine di tiro
   final List<DartsPlayer> _guests = [];
   int _startScore = 501;
+  DartsMode _mode = DartsMode.x01;
   OutRule _outRule = OutRule.double;
 
   void _toggle(DartsPlayer p) {
@@ -39,6 +59,7 @@ class _DartsPageState extends ConsumerState<DartsPage> {
       '/darts/partita',
       extra: DartsGameConfig(
         players: List.of(_selected),
+        mode: _mode,
         startScore: _startScore,
         outRule: _outRule,
       ),
@@ -50,9 +71,11 @@ class _DartsPageState extends ConsumerState<DartsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Eliminare ${p.name}?'),
-        content: Text(p.isRegistered
-            ? 'Verranno eliminate anche le sue statistiche sul server.'
-            : 'Il giocatore ospite verrà rimosso.'),
+        content: Text(
+          p.isRegistered
+              ? 'Verranno eliminate anche le sue statistiche sul server.'
+              : 'Il giocatore ospite verrà rimosso.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -72,8 +95,9 @@ class _DartsPageState extends ConsumerState<DartsPage> {
         await ref.read(dartsPlayersProvider.notifier).remove(p.id!);
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('Errore: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Errore: $e')));
         }
         return;
       }
@@ -168,48 +192,84 @@ class _DartsPageState extends ConsumerState<DartsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Punteggio',
-                        style: theme.textTheme.labelLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [301, 501, 701].map((s) {
-                        return ChoiceChip(
-                          label: Text('$s'),
-                          selected: _startScore == s,
-                          onSelected: (_) => setState(() => _startScore = s),
-                        );
-                      }).toList(),
+                    SegmentedButton<DartsMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(value: DartsMode.x01, label: Text('X01')),
+                        ButtonSegment(
+                          value: DartsMode.cricket,
+                          label: Text('Cricket'),
+                        ),
+                      ],
+                      selected: {_mode},
+                      onSelectionChanged: (s) =>
+                          setState(() => _mode = s.first),
                     ),
                     const SizedBox(height: 16),
-                    Text('Chiusura',
-                        style: theme.textTheme.labelLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    SegmentedButton<OutRule>(
-                      showSelectedIcon: false,
-                      segments: OutRule.values
-                          .map((r) => ButtonSegment(
+
+                    if (_mode == DartsMode.x01) ...[
+                      Text(
+                        'Punteggio',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: [301, 501, 701].map((s) {
+                          return ChoiceChip(
+                            label: Text('$s'),
+                            selected: _startScore == s,
+                            onSelected: (_) =>
+                                setState(() => _startScore = s),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Chiusura',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<OutRule>(
+                        showSelectedIcon: false,
+                        segments: OutRule.values
+                            .map(
+                              (r) => ButtonSegment(
                                 value: r,
                                 label: Text(r.label.replaceAll(' out', '')),
-                              ))
-                          .toList(),
-                      selected: {_outRule},
-                      onSelectionChanged: (s) =>
-                          setState(() => _outRule = s.first),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      switch (_outRule) {
-                        OutRule.single => 'Si chiude con qualsiasi freccetta.',
-                        OutRule.double => 'Si chiude con un doppio (o Bull).',
-                        OutRule.master => 'Si chiude con doppio, triplo o Bull.',
-                      },
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            )
+                            .toList(),
+                        selected: {_outRule},
+                        onSelectionChanged: (s) =>
+                            setState(() => _outRule = s.first),
                       ),
-                    ),
+                      const SizedBox(height: 6),
+                      Text(
+                        switch (_outRule) {
+                          OutRule.single =>
+                            'Si chiude con qualsiasi freccetta.',
+                          OutRule.double =>
+                            'Si chiude con un doppio (o Bull).',
+                          OutRule.master =>
+                            'Si chiude con doppio, triplo o Bull.',
+                        },
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ] else
+                      Text(
+                        'Chiudi 20, 19, 18, 17, 16, 15 e Bull. '
+                        'Con un solo giocatore è un esercizio.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -224,7 +284,8 @@ class _DartsPageState extends ConsumerState<DartsPage> {
                       leading: const Icon(Icons.cloud_off),
                       title: const Text('Giocatori registrati non disponibili'),
                       subtitle: const Text(
-                          'Puoi comunque giocare con gli ospiti.'),
+                        'Puoi comunque giocare con gli ospiti.',
+                      ),
                       trailing: TextButton(
                         onPressed: () => ref.invalidate(dartsPlayersProvider),
                         child: const Text('Riprova'),
@@ -256,22 +317,19 @@ class _DartsPageState extends ConsumerState<DartsPage> {
                   crossAxisSpacing: 12,
                   childAspectRatio: 1.0,
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index == all.length) {
-                      return _AddCard(onTap: _showAddDialog);
-                    }
-                    final p = all[index];
-                    final pos = _selected.indexOf(p);
-                    return _PlayerCard(
-                      player: p,
-                      order: pos == -1 ? null : pos + 1,
-                      onTap: () => _toggle(p),
-                      onLongPress: () => _delete(p),
-                    );
-                  },
-                  childCount: all.length + 1,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  if (index == all.length) {
+                    return _AddCard(onTap: _showAddDialog);
+                  }
+                  final p = all[index];
+                  final pos = _selected.indexOf(p);
+                  return _PlayerCard(
+                    player: p,
+                    order: pos == -1 ? null : pos + 1,
+                    onTap: () => _toggle(p),
+                    onLongPress: () => _delete(p),
+                  );
+                }, childCount: all.length + 1),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 96)),
@@ -284,9 +342,8 @@ class _DartsPageState extends ConsumerState<DartsPage> {
   void _showAddDialog() {
     showDialog(
       context: context,
-      builder: (_) => _AddPlayerDialog(
-        onGuest: (p) => setState(() => _guests.add(p)),
-      ),
+      builder: (_) =>
+          _AddPlayerDialog(onGuest: (p) => setState(() => _guests.add(p))),
     );
   }
 }
@@ -349,8 +406,9 @@ class _PlayerCard extends StatelessWidget {
                       ),
                       Text(
                         'media ${player.avgPpr.toStringAsFixed(1)}',
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: theme.colorScheme.primary),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ] else
                       Text('Ospite', style: theme.textTheme.labelSmall),
@@ -402,8 +460,10 @@ class _AddCard extends StatelessWidget {
           children: [
             Icon(Icons.add, size: 32, color: theme.colorScheme.primary),
             const SizedBox(height: 6),
-            const Text('Nuovo giocatore',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              'Nuovo giocatore',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ],
         ),
       ),
@@ -495,11 +555,13 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
             Wrap(
               spacing: 6,
               children: _avatars
-                  .map((e) => ChoiceChip(
-                        label: Text(e, style: const TextStyle(fontSize: 20)),
-                        selected: _avatar == e,
-                        onSelected: (_) => setState(() => _avatar = e),
-                      ))
+                  .map(
+                    (e) => ChoiceChip(
+                      label: Text(e, style: const TextStyle(fontSize: 20)),
+                      selected: _avatar == e,
+                      onSelected: (_) => setState(() => _avatar = e),
+                    ),
+                  )
                   .toList(),
             ),
             if (_error != null) ...[
