@@ -142,7 +142,6 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold>
   /// Ritorna la rotta padre, o null se siamo già in home.
   String? _parentOf(String path) {
     if (path == '/home') return null;
-    if (path.startsWith('/users/')) return '/users';
     if (path.startsWith('/gestione-veicolo/')) return '/veicoli';
     return '/home';
   }

@@ -12,7 +12,7 @@ class SafeImage extends StatelessWidget {
   final double? height;
   final Color? color;
   final BlendMode? colorBlendMode;
-  final AlignmentGeometry alignment;
+  final Alignment alignment;
   final ImageRepeat repeat;
   final Rect? centerSlice;
   final bool matchTextDirection;
@@ -20,8 +20,8 @@ class SafeImage extends StatelessWidget {
   final FilterQuality filterQuality;
   final bool isAntiAlias;
   final Map<String, String>? httpHeaders;
-  final Duration? fadeOutDuration;
-  final Duration? fadeInDuration;
+  final Duration fadeOutDuration;
+  final Duration fadeInDuration;
   final Curve fadeOutCurve;
   final Curve fadeInCurve;
 
@@ -43,8 +43,8 @@ class SafeImage extends StatelessWidget {
     this.filterQuality = FilterQuality.low,
     this.isAntiAlias = false,
     this.httpHeaders,
-    this.fadeOutDuration,
-    this.fadeInDuration,
+    this.fadeOutDuration = const Duration(milliseconds: 300),
+    this.fadeInDuration = const Duration(milliseconds: 500),
     this.fadeOutCurve = Curves.easeOut,
     this.fadeInCurve = Curves.easeIn,
   });
@@ -170,7 +170,7 @@ extension SafeImageExtension on Image {
     Animation<double>? opacity,
     BlendMode? colorBlendMode,
     BoxFit? fit,
-    AlignmentGeometry alignment = Alignment.center,
+    Alignment alignment = Alignment.center,
     ImageRepeat repeat = ImageRepeat.noRepeat,
     Rect? centerSlice,
     bool matchTextDirection = false,

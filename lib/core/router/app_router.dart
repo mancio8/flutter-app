@@ -6,8 +6,6 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
-import '../../features/users/presentation/pages/users_page.dart';
-import '../../features/users/presentation/pages/user_detail_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/home/presentation/pages/ui_showcase_page.dart';
@@ -105,21 +103,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const RifornimentiPage(),
           ),
           GoRoute(
-            path: '/users',
-            builder: (context, state) => const UsersPage(),
-            routes: [
-              GoRoute(
-                path: ':userId',
-                builder: (context, state) {
-                  final userId = state.pathParameters['userId']!;
-                  return UserDetailPage(userId: userId);
-                },
-              ),
-            ],
-          ),
-          // Nella lista delle routes
-          GoRoute(
-            path: '/raccolta',
+            path: '/raccolta', // NUOVA ROTTA
             builder: (context, state) => const RaccoltaPage(),
           ),
           GoRoute(
