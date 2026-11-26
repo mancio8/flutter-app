@@ -1,4 +1,5 @@
 // File: lib/features/biblioteca/providers/biblioteca_provider.dart
+import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/libro.dart';
 import '../repository/biblioteca_repository.dart';
@@ -40,7 +41,7 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
     try {
       return await repository.getLibriLetti();
     } catch (e) {
-      print('Errore nel build: $e');
+      developer.log('Errore nel build: $e', name: 'biblioteca', error: e);
       rethrow;
     }
   }
@@ -52,7 +53,12 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
       await repository.addLibro(libro);
       await _reload();
     } catch (e, stackTrace) {
-      print('Errore aggiunta libro: $e');
+      developer.log(
+        'Errore aggiunta libro: $e',
+        name: 'biblioteca',
+        error: e,
+        stackTrace: stackTrace,
+      );
       if (state.value == null) {
         state = AsyncValue.error(e, stackTrace);
       }
@@ -67,7 +73,12 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
       await repository.updateLibro(libro);
       await _reload();
     } catch (e, stackTrace) {
-      print('Errore aggiornamento libro: $e');
+      developer.log(
+        'Errore aggiornamento libro: $e',
+        name: 'biblioteca',
+        error: e,
+        stackTrace: stackTrace,
+      );
       if (state.value == null) {
         state = AsyncValue.error(e, stackTrace);
       }
@@ -82,7 +93,12 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
       await repository.deleteLibro(id);
       await _reload();
     } catch (e, stackTrace) {
-      print('Errore eliminazione libro: $e');
+      developer.log(
+        'Errore eliminazione libro: $e',
+        name: 'biblioteca',
+        error: e,
+        stackTrace: stackTrace,
+      );
       if (state.value == null) {
         state = AsyncValue.error(e, stackTrace);
       }
@@ -97,7 +113,11 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
       await repository.addToWishlist(libro);
       ref.invalidate(wishlistProvider);
     } catch (e) {
-      print('Errore aggiunta wishlist: $e');
+      developer.log(
+        'Errore aggiunta wishlist: $e',
+        name: 'biblioteca',
+        error: e,
+      );
       rethrow;
     }
   }
@@ -110,7 +130,11 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
       await _reload();
       ref.invalidate(wishlistProvider);
     } catch (e) {
-      print('Errore spostamento: $e');
+      developer.log(
+        'Errore spostamento: $e',
+        name: 'biblioteca',
+        error: e,
+      );
       rethrow;
     }
   }
@@ -122,7 +146,11 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
       await repository.removeFromWishlist(id);
       ref.invalidate(wishlistProvider);
     } catch (e) {
-      print('Errore rimozione wishlist: $e');
+      developer.log(
+        'Errore rimozione wishlist: $e',
+        name: 'biblioteca',
+        error: e,
+      );
       rethrow;
     }
   }
@@ -140,7 +168,12 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
       await _reload();
       return count;
     } catch (e, stackTrace) {
-      print('Errore importazione: $e');
+      developer.log(
+        'Errore importazione: $e',
+        name: 'biblioteca',
+        error: e,
+        stackTrace: stackTrace,
+      );
       if (state.value == null) {
         state = AsyncValue.error(e, stackTrace);
       }
@@ -154,7 +187,12 @@ class BibliotecaNotifier extends AsyncNotifier<List<Libro>> {
       final libri = await repository.getLibriLetti();
       state = AsyncValue.data(libri);
     } catch (e, stackTrace) {
-      print('Errore reload: $e');
+      developer.log(
+        'Errore reload: $e',
+        name: 'biblioteca',
+        error: e,
+        stackTrace: stackTrace,
+      );
       if (state.value == null) {
         state = AsyncValue.error(e, stackTrace);
       }

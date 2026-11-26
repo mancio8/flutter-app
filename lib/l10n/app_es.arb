@@ -4,6 +4,7 @@
   "welcomeMessage": "Bienvenido a Flutter Starter",
   "home": "Inicio",
   "dashboard": "Panel de Control",
+  "fuel": "Combustible",
   "users": "Usuarios",
   "notifications": "Notificaciones",
   "settings": "Configuración",

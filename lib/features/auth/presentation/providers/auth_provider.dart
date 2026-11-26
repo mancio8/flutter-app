@@ -19,6 +19,11 @@ class AuthState {
     String? error,
     bool clearError = false,
   }) {
+    // clearUser azzera l'utente; non ha senso combinarlo con un user non null.
+    assert(
+      !(clearUser && user != null),
+      'clearUser=true e user non null sono incompatibili',
+    );
     return AuthState(
       user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,

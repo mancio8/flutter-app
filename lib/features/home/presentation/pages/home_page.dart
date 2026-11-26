@@ -52,7 +52,7 @@ class HomePage extends StatelessWidget {
                   child: Icon(
                     Icons.rocket_launch,
                     size: 80,
-                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
                   ),
                 ),
               ),

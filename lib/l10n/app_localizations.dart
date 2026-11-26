@@ -124,6 +124,12 @@ abstract class AppLocalizations {
   /// **'Dashboard'**
   String get dashboard;
 
+  /// Fuel navigation label
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel'**
+  String get fuel;
+
   /// Users navigation label
   ///
   /// In en, this message translates to:

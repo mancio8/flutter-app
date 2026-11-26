@@ -67,11 +67,16 @@ class GlobalErrorHandler {
     // In a real app, you would send this to your error reporting service
     // Examples: Firebase Crashlytics, Sentry, Bugsnag, etc.
     if (kDebugMode) {
-      print('=== ERROR REPORT ===');
-      print('Context: $context');
-      print('Error: $error');
-      print('Stack: $stack');
-      print('==================');
+      developer.log(
+        '=== ERROR REPORT ===',
+        name: 'ErrorHandler',
+        error: error,
+        stackTrace: stack,
+      );
+      developer.log(
+        'Context: $context',
+        name: 'ErrorHandler',
+      );
     }
   }
 
@@ -85,7 +90,10 @@ class GlobalErrorHandler {
     
     // Add metadata logging
     if (metadata != null && kDebugMode) {
-      print('Metadata: $metadata');
+      developer.log(
+        'Metadata: $metadata',
+        name: 'ErrorHandler',
+      );
     }
   }
 

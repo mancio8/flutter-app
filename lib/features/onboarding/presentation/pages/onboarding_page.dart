@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -176,13 +177,20 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         ref.read(onboardingCompletedProvider.notifier).state = true;
         
         // Debug log to verify the flow
-        print('Onboarding completed, navigating to /home');
-        
+        developer.log(
+          'Onboarding completed, navigating to /home',
+          name: 'onboarding',
+        );
+
         // Navigate to home
         context.go('/home');
       }
     } catch (e) {
-      print('Error completing onboarding: $e');
+      developer.log(
+        'Error completing onboarding: $e',
+        name: 'onboarding',
+        error: e,
+      );
       // Fallback navigation even if preference saving fails
       if (mounted) {
         context.go('/home');

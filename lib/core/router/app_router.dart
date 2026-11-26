@@ -182,7 +182,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/darts/partita',
             builder: (context, state) {
-              final cfg = state.extra as DartsGameConfig?;
+              // Cast sicuro: se extra non è un DartsGameConfig (es. deep-link
+              // diretto), mostra la pagina di errore invece di crashare.
+              final cfg = state.extra is DartsGameConfig
+                  ? state.extra as DartsGameConfig
+                  : null;
               if (cfg == null) {
                 return const Scaffold(body: Center(child: Text('Partita non valida')));
               }

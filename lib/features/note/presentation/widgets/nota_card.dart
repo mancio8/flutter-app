@@ -37,14 +37,14 @@ class NotaCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(nota.categoria.icon, size: 16, color: coloreTesto.withOpacity(0.7)),
+                  Icon(nota.categoria.icon, size: 16, color: coloreTesto.withValues(alpha: 0.7)),
                   const SizedBox(width: 6),
                   Text(
                     nota.categoria.label,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: coloreTesto.withOpacity(0.7),
+                      color: coloreTesto.withValues(alpha: 0.7),
                     ),
                   ),
                   const Spacer(),
@@ -53,7 +53,7 @@ class NotaCard extends StatelessWidget {
                     child: Icon(
                       nota.fissata ? Icons.push_pin : Icons.push_pin_outlined,
                       size: 18,
-                      color: coloreTesto.withOpacity(0.7),
+                      color: coloreTesto.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -73,11 +73,11 @@ class NotaCard extends StatelessWidget {
                 children: [
                   Text(
                     _formatData(nota.dataCreazione),
-                    style: TextStyle(fontSize: 10, color: coloreTesto.withOpacity(0.6)),
+                    style: TextStyle(fontSize: 10, color: coloreTesto.withValues(alpha: 0.6)),
                   ),
                   InkWell(
                     onTap: onDelete,
-                    child: Icon(Icons.delete_outline, size: 16, color: coloreTesto.withOpacity(0.6)),
+                    child: Icon(Icons.delete_outline, size: 16, color: coloreTesto.withValues(alpha: 0.6)),
                   ),
                 ],
               ),

@@ -98,8 +98,13 @@ flutter:
   # Generate localization files
   generate: true
 
-  assets:
-    - .env
+  # NOTA: il file .env NON è incluso negli asset (rischio esposizione credenziali).
+  # Le variabili Supabase vengono iniettate a compile-time con --dart-define:
+  #   flutter build apk --release \
+  #     --dart-define=SUPABASE_URL=... \
+  #     --dart-define=SUPABASE_ANON_KEY=...
+  # In sviluppo è possibile usare flutter_dotenv leggendo .env dalla root
+  # (file ignorato da git, non incluso nel bundle).
 
   # To add assets to your application, add an assets section, like this:
   # assets:

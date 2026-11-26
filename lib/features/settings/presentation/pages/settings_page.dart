@@ -57,7 +57,7 @@ class SettingsPage extends ConsumerWidget {
                   child: Icon(
                     Icons.tune,
                     size: 80,
-                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -170,7 +170,7 @@ class SettingsPage extends ConsumerWidget {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: seed.color.withOpacity(0.5),
+                                color: seed.color.withValues(alpha: 0.5),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -352,7 +352,7 @@ class SettingsPage extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                    color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -458,7 +458,7 @@ class _SettingsGroup extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.05),
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
@@ -470,7 +470,7 @@ class _SettingsGroup extends StatelessWidget {
                   thickness: 1,
                   indent: 16,
                   endIndent: 16,
-                  color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
                 ),
             ],
           ],
@@ -524,7 +524,7 @@ class _CampionatoSettingsGroup extends ConsumerWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.05),
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         clipBehavior: Clip.antiAlias,
         child: configAsync.when(
           loading: () => const Padding(
@@ -567,7 +567,7 @@ class _CampionatoSettingsGroup extends ConsumerWidget {
                   thickness: 1,
                   indent: 16,
                   endIndent: 16,
-                  color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
                 ),
 
                 // Squadra preferita
@@ -684,7 +684,7 @@ class _CampionatoSettingsGroup extends ConsumerWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -869,7 +869,7 @@ class _CampionatoSettingsGroup extends ConsumerWidget {
                                   height: 36,
                                   decoration: BoxDecoration(
                                     color: theme.colorScheme.primaryContainer
-                                        .withOpacity(0.4),
+                                        .withValues(alpha: 0.4),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   padding: const EdgeInsets.all(4),

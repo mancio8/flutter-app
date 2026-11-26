@@ -68,7 +68,7 @@ class _GironePageState extends ConsumerState<GironePage> {
                     child: Icon(
                       Icons.emoji_events_outlined,
                       size: 80,
-                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
                     ),
                   ),
                 ),
@@ -88,7 +88,7 @@ class _GironePageState extends ConsumerState<GironePage> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -231,7 +231,7 @@ class _ClassificaSliver extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -313,13 +313,13 @@ class _ClassificaRow extends StatelessWidget {
     Color posBg;
     if (squadra.posizione <= 2) {
       posColor = Colors.green[800]!;
-      posBg = Colors.green.withOpacity(0.12);
+      posBg = Colors.green.withValues(alpha: 0.12);
     } else if (squadra.posizione <= 4) {
       posColor = Colors.blue[800]!;
-      posBg = Colors.blue.withOpacity(0.12);
+      posBg = Colors.blue.withValues(alpha: 0.12);
     } else if (squadra.posizione >= 9) {
       posColor = theme.colorScheme.error;
-      posBg = theme.colorScheme.error.withOpacity(0.1);
+      posBg = theme.colorScheme.error.withValues(alpha: 0.1);
     } else {
       posColor = theme.colorScheme.onSurfaceVariant;
       posBg = Colors.transparent;
@@ -447,7 +447,7 @@ class _CalendarioSliver extends ConsumerWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -502,7 +502,7 @@ class _CalendarioSliver extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -516,7 +516,7 @@ class _CalendarioSliver extends ConsumerWidget {
                     tooltip: 'Giornata precedente',
                     color: canGoPrev
                         ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                        : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     onPressed: canGoPrev
                         ? () {
                             ref
@@ -569,7 +569,7 @@ class _CalendarioSliver extends ConsumerWidget {
                     tooltip: 'Giornata successiva',
                     color: canGoNext
                         ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                        : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     onPressed: canGoNext
                         ? () {
                             ref
@@ -631,7 +631,7 @@ class _PartitaCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -831,7 +831,7 @@ class _LogoBox extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(10),
         ),
         padding: const EdgeInsets.all(4),
@@ -894,7 +894,7 @@ class _DatiNonDisponibili extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(

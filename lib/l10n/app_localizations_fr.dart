@@ -21,6 +21,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboard => 'Tableau de Bord';
 
   @override
+  String get fuel => 'Carburant';
+
+  @override
   String get users => 'Utilisateurs';
 
   @override

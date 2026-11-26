@@ -21,6 +21,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboard => 'Dashboard';
 
   @override
+  String get fuel => 'Fuel';
+
+  @override
   String get users => 'Users';
 
   @override

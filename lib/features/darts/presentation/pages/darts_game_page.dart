@@ -472,7 +472,7 @@ class _DartsGamePageState extends ConsumerState<DartsGamePage> {
           duration: const Duration(milliseconds: 150),
           height: 46,
           decoration: BoxDecoration(
-            color: sel ? c : c.withOpacity(0.12),
+            color: sel ? c : c.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: c, width: 2),
           ),
@@ -495,7 +495,7 @@ class _DartsGamePageState extends ConsumerState<DartsGamePage> {
     final tinted = _mult > 1;
     final c = _multColor(_mult);
     return Material(
-      color: tinted ? c.withOpacity(0.16) : theme.colorScheme.surface,
+      color: tinted ? c.withValues(alpha: 0.16) : theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -540,7 +540,7 @@ class _DartsGamePageState extends ConsumerState<DartsGamePage> {
       child: Opacity(
         opacity: onTap == null ? 0.35 : 1,
         child: Material(
-          color: c.withOpacity(0.14),
+          color: c.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -642,7 +642,7 @@ class _DartSlot extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(vertical: 7),
       decoration: BoxDecoration(
-        color: d == null ? Colors.transparent : c.withOpacity(0.16),
+        color: d == null ? Colors.transparent : c.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: c, width: d == null ? 1 : 2),
       ),
@@ -719,7 +719,7 @@ class _PlayerTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: EdgeInsets.all(active ? 16 : 12),
       decoration: BoxDecoration(
-        color: active ? c.withOpacity(0.10) : theme.colorScheme.surface,
+        color: active ? c.withValues(alpha: 0.10) : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: active ? c : theme.colorScheme.outlineVariant,
@@ -787,7 +787,7 @@ class _PlayerTile extends StatelessWidget {
                   value: v,
                   minHeight: 7,
                   color: c,
-                  backgroundColor: c.withOpacity(0.18),
+                  backgroundColor: c.withValues(alpha: 0.18),
                 ),
               ),
             ),

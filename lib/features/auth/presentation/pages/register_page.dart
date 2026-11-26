@@ -38,7 +38,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              theme.colorScheme.primaryContainer.withOpacity(0.3),
+              theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               theme.colorScheme.surface,
             ],
           ),
@@ -64,7 +64,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.3),
+                              color: theme.colorScheme.primary.withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 5),
                             ),

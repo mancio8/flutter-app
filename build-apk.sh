@@ -7,6 +7,10 @@
 # una JDK 17+ nel Nix store e la usa per la build, senza modificare
 # configuration.nix e senza bisogno di sudo.
 #
+# Le credenziali Supabase (SUPABASE_URL, SUPABASE_ANON_KEY) vengono lette
+# dal file .env e iniettate a compile-time con --dart-define, così il file
+# .env NON finisce nel bundle dell'APK.
+#
 # Uso:
 #   ./build-apk.sh
 #
@@ -49,6 +53,31 @@ echo "==> JDK rilevata: $JDK_HOME"
 "$JDK_HOME/bin/java" -version 2>&1 | head -1
 echo ""
 
+# --- Legge le credenziali Supabase da .env ---------------------------
+SUPABASE_URL=""
+SUPABASE_ANON_KEY=""
+
+if [ -f .env ]; then
+  # Carica le variabili dal .env (senza processarle come script)
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env
+  set +a
+  SUPABASE_URL="${SUPABASE_URL:-}"
+  SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
+fi
+
+if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+  echo "ERRORE: SUPABASE_URL e SUPABASE_ANON_KEY mancanti."
+  echo "Crea un file .env nella root (vedi .env.example) oppure esporta le variabili:"
+  echo "  export SUPABASE_URL=https://<project-ref>.supabase.co"
+  echo "  export SUPABASE_ANON_KEY=<anon-key>"
+  exit 1
+fi
+
+echo "==> Credenziali Supabase caricate da .env"
+echo ""
+
 # --- Pulizia e build -------------------------------------------------
 echo "==> [1/3] Pulizia progetto..."
 flutter clean
@@ -57,7 +86,9 @@ echo "==> [2/3] Download dipendenze..."
 flutter pub get
 
 echo "==> [3/3] Build APK release..."
-JAVA_HOME="$JDK_HOME" flutter build apk --release
+JAVA_HOME="$JDK_HOME" flutter build apk --release \
+  --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+  --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 
 echo ""
 echo "==> APK creato con successo:"

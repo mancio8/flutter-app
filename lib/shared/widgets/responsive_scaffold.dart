@@ -256,7 +256,7 @@ class _AnimatedNavigationRail extends StatelessWidget {
       NavigationRailDestination(
         icon: const Icon(Icons.local_gas_station_outlined),
         selectedIcon: const Icon(Icons.local_gas_station),
-        label: const Text('Fuel'),
+        label: Text(l10n.fuel),
       ),
       NavigationRailDestination(
         icon: const Icon(Icons.menu_book_outlined),
@@ -357,7 +357,7 @@ class _AnimatedNavigationBar extends StatelessWidget {
       NavigationDestination(
         icon: const Icon(Icons.local_gas_station_outlined),
         selectedIcon: const Icon(Icons.local_gas_station),
-        label: 'Fuel',
+        label: l10n.fuel,
       ),
       NavigationDestination(
         icon: const Icon(Icons.settings_outlined),

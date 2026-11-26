@@ -142,7 +142,7 @@ class _DartsPageState extends ConsumerState<DartsPage> {
                     child: Icon(
                       Icons.gps_fixed,
                       size: 80,
-                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
                     ),
                   ),
                 ),
@@ -159,7 +159,7 @@ class _DartsPageState extends ConsumerState<DartsPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -311,7 +311,7 @@ class _PlayerCard extends StatelessWidget {
     final c = player.colorValue;
 
     return Material(
-      color: selected ? c.withOpacity(0.12) : theme.colorScheme.surface,
+      color: selected ? c.withValues(alpha: 0.12) : theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
       elevation: 1,
       child: InkWell(

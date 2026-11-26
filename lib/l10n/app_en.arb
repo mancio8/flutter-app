@@ -19,6 +19,11 @@
   "@dashboard": {
     "description": "Dashboard navigation label"
   },
+
+  "fuel": "Fuel",
+  "@fuel": {
+    "description": "Fuel navigation label"
+  },
   
   "users": "Users",
   "@users": {

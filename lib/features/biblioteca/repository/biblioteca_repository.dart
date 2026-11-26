@@ -1,5 +1,6 @@
 // File: lib/features/biblioteca/data/repository/biblioteca_repository.dart
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/models/libro.dart';
@@ -143,7 +144,10 @@ class BibliotecaRepository {
       );
 
       if (response.statusCode != 200) {
-        print('Errore Google Books: ${response.statusCode}');
+        developer.log(
+          'Errore Google Books: ${response.statusCode}',
+          name: 'biblioteca',
+        );
         return [];
       }
 
@@ -151,7 +155,10 @@ class BibliotecaRepository {
       final items = data['items'];
 
       if (items == null || items is! List) {
-        print('Nessun items nella risposta');
+        developer.log(
+          'Nessun items nella risposta',
+          name: 'biblioteca',
+        );
         return [];
       }
 
@@ -188,8 +195,12 @@ class BibliotecaRepository {
         );
       }).toList();
     } catch (e, stackTrace) {
-      print('ERRORE searchBooksOnline: $e');
-      print(stackTrace);
+      developer.log(
+        'ERRORE searchBooksOnline: $e',
+        name: 'biblioteca',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return [];
     }
   }
@@ -288,7 +299,10 @@ class BibliotecaRepository {
 
       if (jsonList.isEmpty) return 0;
 
-      print('Inizio importazione: ${jsonList.length} libri, merge: $merge');
+      developer.log(
+        'Inizio importazione: ${jsonList.length} libri, merge: $merge',
+        name: 'biblioteca',
+      );
 
       final List<Map<String, dynamic>> libriDaImportare = [];
       final Set<String> chiaviEsistenti = {};
@@ -324,7 +338,10 @@ class BibliotecaRepository {
           final chiave = '$titolo|$autore'.toLowerCase();
 
           if (merge && chiaviEsistenti.contains(chiave)) {
-            print('Duplicato saltato: $titolo');
+            developer.log(
+              'Duplicato saltato: $titolo',
+              name: 'biblioteca',
+            );
             continue;
           }
 
@@ -342,14 +359,24 @@ class BibliotecaRepository {
             chiaviEsistenti.add(chiave);
           }
         } catch (e) {
-          print('Errore nel parsing del libro $i: $e');
+          developer.log(
+            'Errore nel parsing del libro $i: $e',
+            name: 'biblioteca',
+            error: e,
+          );
         }
       }
 
-      print('Libri da importare: ${libriDaImportare.length}');
+      developer.log(
+        'Libri da importare: ${libriDaImportare.length}',
+        name: 'biblioteca',
+      );
 
       if (!merge) {
-        print('Eliminazione libri esistenti...');
+        developer.log(
+          'Eliminazione libri esistenti...',
+          name: 'biblioteca',
+        );
         await _supabase.from('biblioteca_libri').delete().eq('user_id', userId);
       }
 
@@ -370,10 +397,17 @@ class BibliotecaRepository {
         }
       }
 
-      print('Importazione completata: $importati libri');
+      developer.log(
+        'Importazione completata: $importati libri',
+        name: 'biblioteca',
+      );
       return importati;
     } catch (e) {
-      print('Errore durante l\'importazione: $e');
+      developer.log(
+        'Errore durante l\'importazione: $e',
+        name: 'biblioteca',
+        error: e,
+      );
       throw Exception('Errore durante l\'importazione: $e');
     }
   }

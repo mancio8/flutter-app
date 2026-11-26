@@ -50,7 +50,7 @@ class EsercizioDettaglioPage extends ConsumerWidget {
                   height: 220,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                    color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text('Servono almeno 2 sessioni per il grafico'),
@@ -199,7 +199,7 @@ class _ProgressoChart extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -214,7 +214,7 @@ class _ProgressoChart extends StatelessWidget {
             drawVerticalLine: false,
             horizontalInterval: ((maxY - minY) / 4).clamp(1, double.infinity),
             getDrawingHorizontalLine: (value) => FlLine(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               strokeWidth: 1,
             ),
           ),
@@ -282,7 +282,7 @@ class _ProgressoChart extends StatelessWidget {
               dotData: FlDotData(show: punti.length <= 15),
               belowBarData: BarAreaData(
                 show: true,
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
               ),
             ),
           ],

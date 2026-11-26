@@ -18,14 +18,51 @@ Future<void> main() async {
   // Remove the hash from URLs on web
   usePathUrlStrategy();
 
-  // Load environment variables
-  await dotenv.load(fileName: '.env');
+  // --- Configurazione Supabase -------------------------------------
+  // Priorità: --dart-define (produzione) > .env via dotenv (sviluppo).
+  // In release .env non è incluso negli asset: usa --dart-define.
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  var url = supabaseUrl;
+  var anonKey = supabaseAnonKey;
+
+  // Fallback in sviluppo: carica .env dalla root (ignorato da git)
+  if (url.isEmpty || anonKey.isEmpty) {
+    try {
+      await dotenv.load(fileName: '.env');
+      url = dotenv.env['SUPABASE_URL'] ?? '';
+      anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+    } catch (_) {
+      // .env non trovato in build di release: si affidano ai --dart-define
+    }
+  }
+
+  if (url.isEmpty || anonKey.isEmpty) {
+    // Non avviare l'app senza credenziali: mostra un errore chiaro.
+    runApp(
+      const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'Configurazione mancante.\n\n'
+                'Fornisci SUPABASE_URL e SUPABASE_ANON_KEY tramite --dart-define '
+                '(produzione) o un file .env (sviluppo).',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return;
+  }
 
   // Initialize Supabase
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+  await Supabase.initialize(url: url, anonKey: anonKey);
 
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();

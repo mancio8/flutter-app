@@ -1,11 +1,11 @@
 {
-    "name": "flutter_starter",
-    "short_name": "flutter_starter",
+    "name": "Flutter Starter",
+    "short_name": "Flutter Starter",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "App Flutter con architettura pulita, Riverpod e backend Supabase.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
